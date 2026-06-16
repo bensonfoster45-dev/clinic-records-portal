@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Patient Records & Facility Report System</title>
+<style>
+  :root {
+    --navy:#1a3a5c;--blue:#2563a8;--sky:#e8f2fb;--green:#1a7a4a;--green-l:#e6f5ed;
+    --red:#c0392b;--red-l:#fdecea;--amber:#f59e0b;--amber-l:#fef9e7;
+    --white:#ffffff;--grey1:#f4f7fb;--grey2:#e2e8f0;--grey3:#94a3b8;--text:#1e293b;
+    --radius:12px;--shadow:0 4px 24px rgba(26,58,92,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--grey1);color:var(--text);min-height:100vh;}
+  header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;padding:16px 18px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(26,58,92,0.25);}
+  header h1{font-size:1.1rem;font-weight:700;}
+  header p{font-size:0.72rem;opacity:0.75;margin-top:2px;}
+  .tabs{display:flex;background:var(--navy);border-top:1px solid rgba(255,255,255,0.1);overflow-x:auto;}
+  .tab{flex:1;min-width:64px;padding:9px 4px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.66rem;font-weight:600;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all 0.2s;margin-top:6px;}
+  .tab.active{color:#fff;border-bottom-color:var(--amber);}
+  .tab-icon{display:block;font-size:1rem;margin-bottom:2px;}
+  .panel{display:none;padding:14px;max-width:680px;margin:0 auto;}
+  .panel.active{display:block;}
+  .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;}
+  .card-title{font-size:0.78rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid var(--sky);display:flex;align-items:center;gap:6px;justify-content:space-between;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:0.76rem;font-weight:600;color:var(--navy);margin-bottom:4px;}
+  .field label span{color:var(--red);}
+  .field input,.field select{width:100%;padding:11px 12px;border:1.5px solid var(--grey2);border-radius:8px;font-size:0.95rem;color:var(--text);background:var(--grey1);-webkit-appearance:none;appearance:none;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,168,0.12);background:#fff;}
+  .field input.auto-fill{background:var(--green-l);border-color:var(--green);color:var(--green);font-weight:600;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .seg{display:flex;gap:10px;margin-top:2px;}
+  .seg-btn{flex:1;padding:11px 6px;border-radius:8px;border:2px solid var(--grey2);font-size:0.85rem;font-weight:700;cursor:pointer;background:var(--grey1);color:var(--grey3);}
+  .seg-btn.selected.yes{background:var(--green-l);border-color:var(--green);color:var(--green);}
+  .seg-btn.selected.no{background:var(--red-l);border-color:var(--red);color:var(--red);}
+  .seg-btn.selected.alt{background:var(--sky);border-color:var(--blue);color:var(--blue);}
+  .btn-save{width:100%;padding:15px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--navy));color:#fff;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,168,0.35);margin-top:4px;}
+  .btn-save:active{transform:scale(0.98);}
+  .btn-clear{width:100%;padding:11px;border:2px solid var(--grey2);border-radius:10px;background:#fff;color:var(--grey3);font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:8px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:50px;font-size:0.86rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:999;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.success{background:var(--green);}
+  .toast.error{background:var(--red);}
+  .db-toolbar{display:flex;gap:10px;margin-bottom:12px;align-items:center;}
+  .search-box{flex:1;padding:10px 13px;border:1.5px solid var(--grey2);border-radius:8px;font-size:0.9rem;background:#fff;}
+  .search-box:focus{outline:none;border-color:var(--blue);}
+  .count-badge{background:var(--blue);color:#fff;font-size:0.74rem;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+  .patient-card{background:#fff;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1.5px solid var(--grey2);box-shadow:0 2px 8px rgba(26,58,92,0.06);cursor:pointer;}
+  .patient-card:active{border-color:var(--blue);}
+  .patient-name{font-size:1rem;font-weight:700;color:var(--navy);}
+  .patient-meta{font-size:0.78rem;color:var(--grey3);margin-top:3px;}
+  .patient-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .tag{font-size:0.7rem;font-weight:600;padding:3px 9px;border-radius:20px;}
+  .tag-blue{background:var(--sky);color:var(--blue);}
+  .tag-green{background:var(--green-l);color:var(--green);}
+  .tag-red{background:var(--red-l);color:var(--red);}
+  .tag-amber{background:var(--amber-l);color:#92400e;}
+  .tag-purple{background:#f3e8ff;color:#7c3aed;}
+  .empty-state{text-align:center;padding:48px 24px;color:var(--grey3);}
+  .empty-icon{font-size:3rem;margin-bottom:12px;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,58,92,0.5);z-index:200;align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:85vh;overflow-y:auto;padding:20px;animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .modal-handle{width:40px;height:4px;background:var(--grey2);border-radius:2px;margin:0 auto 16px;}
+  .modal-name{font-size:1.2rem;font-weight:800;color:var(--navy);}
+  .modal-ccc{font-size:0.8rem;color:var(--grey3);margin-top:2px;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+  .modal-field label{font-size:0.68rem;font-weight:700;color:var(--grey3);text-transform:uppercase;letter-spacing:0.6px;}
+  .modal-field p{font-size:0.9rem;font-weight:600;color:var(--text);margin-top:2px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .btn-delete{flex:1;padding:12px;border:2px solid var(--red);border-radius:10px;background:#fff;color:var(--red);font-weight:700;font-size:0.9rem;cursor:pointer;}
+  .btn-close-modal{flex:2;padding:12px;border:none;border-radius:10px;background:var(--blue);color:#fff;font-weight:700;font-size:0.9rem;cursor:pointer;}
+  .btn-export{width:100%;padding:13px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .export-note{font-size:0.76rem;color:var(--grey3);text-align:center;line-height:1.5;margin-top:4px;margin-bottom:12px;}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-box{background:var(--sky);border-radius:10px;padding:14px;text-align:center;}
+  .stat-num{font-size:1.7rem;font-weight:800;color:var(--navy);}
+  .stat-lbl{font-size:0.7rem;color:var(--blue);font-weight:600;margin-top:2px;}
+  .stat-box.green{background:var(--green-l);}
+  .stat-box.green .stat-num{color:var(--green);}
+  .stat-box.red{background:var(--red-l);}
+  .stat-box.red .stat-num{color:var(--red);}
+  .stat-box.amber{background:var(--amber-l);}
+  .stat-box.amber .stat-num{color:#92400e;}
+  .month-select{width:100%;padding:11px 12px;border:1.5px solid var(--grey2);border-radius:8px;font-size:0.95rem;background:#fff;margin-bottom:12px;}
+  .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.8rem;}
+  .bar-label{width:90px;font-weight:600;color:var(--navy);flex-shrink:0;}
+  .bar-track{flex:1;background:var(--grey2);border-radius:6px;height:18px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;color:#fff;font-size:0.7rem;font-weight:700;transition:width 0.4s;}
+  .bar-fill.m{background:var(--blue);}
+  .bar-fill.f{background:#e879a8;}
+
+  /* ── REPORT TABLE (matches photo) ── */
+  .report-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--grey2);border-radius:8px;}
+  table.report{border-collapse:collapse;font-size:0.7rem;width:780px;table-layout:fixed;}
+  table.report col.age{width:130px;}
+  table.report col.data{width:65px;}
+  table.report th,table.report td{border:1px solid #94a3b8;padding:4px 3px;text-align:center;white-space:nowrap;}
+  table.report thead th{background:var(--navy);color:#fff;font-weight:700;font-size:0.62rem;}
+  table.report .grp-insured{background:var(--green-l);}
+  table.report .grp-noninsured{background:var(--red-l);}
+  table.report .grp-total{background:var(--sky);}
+  table.report .age-label{background:var(--grey1);font-weight:700;text-align:left;padding-left:8px;color:var(--navy);}
+  table.report tbody tr:nth-child(even) .age-label{background:#eef2f7;}
+  table.report .total-row td{font-weight:800;background:var(--amber-l);}
+  table.report input{width:100%;border:none;background:transparent;text-align:center;font-size:0.68rem;padding:2px;font-weight:600;color:var(--navy);}
+  table.report input:focus{outline:1.5px solid var(--blue);background:#fff;}
+  .report-header-card{margin-bottom:10px;}
+  .report-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .scroll-hint{font-size:0.72rem;color:var(--grey3);text-align:center;margin-bottom:8px;}
+  #visitlist-table{font-size:0.78rem;}
+  #visitlist-table thead th{background:var(--navy);color:#fff;padding:6px 8px;}
+  #visitlist-table tbody td{padding:6px 8px;}
+  #visitlist-table tbody tr:nth-child(even){background:var(--grey1);}
+
+
+  /* Multi-select diagnosis tag input */
+  .tag-input-wrap{border:1.5px solid var(--grey2);border-radius:8px;background:var(--grey1);padding:6px 8px;min-height:44px;display:flex;flex-wrap:wrap;gap:5px;cursor:text;}
+  .tag-input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,168,0.12);background:#fff;}
+  .diag-tag{background:var(--sky);color:var(--blue);font-size:0.78rem;font-weight:600;padding:3px 8px;border-radius:20px;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+  .diag-tag .rm{cursor:pointer;font-size:0.9rem;font-weight:700;color:var(--blue);opacity:0.7;line-height:1;}
+  .diag-tag .rm:hover{opacity:1;}
+  .tag-input{border:none;background:transparent;outline:none;font-size:0.9rem;min-width:120px;flex:1;padding:2px 4px;}
+  .diag-dropdown{position:absolute;z-index:50;background:#fff;border:1.5px solid var(--blue);border-radius:8px;max-height:200px;overflow-y:auto;box-shadow:var(--shadow);width:100%;}
+  .diag-dropdown div{padding:8px 12px;font-size:0.85rem;cursor:pointer;color:var(--text);}
+  .diag-dropdown div:hover,.diag-dropdown div.active{background:var(--sky);color:var(--blue);}
+  .diag-wrap{position:relative;}
+  /* Edit consult modal */
+  .edit-field{margin-bottom:10px;}
+  .edit-field label{display:block;font-size:0.72rem;font-weight:600;color:var(--grey3);text-transform:uppercase;margin-bottom:3px;}
+  .edit-field input,.edit-field select{width:100%;padding:9px 10px;border:1.5px solid var(--grey2);border-radius:7px;font-size:0.9rem;}
+  .edit-field input:focus,.edit-field select:focus{outline:none;border-color:var(--blue);}
+  .edit-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .btn-edit-save{width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--navy));color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:8px;}
+  /* Enlarged morbidity table */
+  #morbidity-table{font-size:0.7rem;min-width:1800px;}
+  #morbidity-table th,#morbidity-table td{padding:4px 5px;border:1px solid #94a3b8;text-align:center;white-space:nowrap;}
+  #morbidity-table .age-label{text-align:left;padding-left:8px;font-weight:600;background:var(--grey1);min-width:240px;white-space:normal;word-break:break-word;}
+  #morbidity-table .section-row td{background:var(--navy);color:#fff;font-weight:800;text-align:left;padding:6px 10px;font-size:0.75rem;letter-spacing:0.4px;}
+  #morbidity-table .total-row td{font-weight:800;background:var(--amber-l);}
+  #morbidity-table .grp-insured{background:var(--green-l);color:#1a3a5c;}
+  #morbidity-table .grp-noninsured{background:var(--red-l);color:#1a3a5c;}
+  #morbidity-table .grp-total{background:var(--sky);color:#1a3a5c;}
+  .morb-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--grey2);border-radius:8px;}
+  .panel#panel-morbidity{max-width:100%;}
+
+  .step-item{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;}
+  .step-num{min-width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .step-text{font-size:0.85rem;line-height:1.5;color:var(--text);}
+  .step-text strong{color:var(--navy);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏥 Patient Records & Facility Report</h1>
+  <p>CCC · Demographics · Insurance · Monthly facility statistics</p>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('form',this)"><span class="tab-icon">📝</span>Entry</button>
+    <button class="tab" onclick="switchTab('db',this)"><span class="tab-icon">🗄️</span>Records</button>
+    <button class="tab" onclick="switchTab('dash',this)"><span class="tab-icon">📊</span>Dashboard</button>
+    <button class="tab" onclick="switchTab('report',this)"><span class="tab-icon">📋</span>Summary Report</button>
+    <button class="tab" onclick="switchTab('monthlist',this)"><span class="tab-icon">📑</span>Visit List</button>
+    <button class="tab" onclick="switchTab('consult',this)"><span class="tab-icon">🩺</span>Consulting Register</button>
+    <button class="tab" onclick="switchTab('morbidity',this)"><span class="tab-icon">📈</span>Morbidity Tally</button>
+    <button class="tab" onclick="switchTab('export',this)"><span class="tab-icon">📤</span>Export</button>
+  </div>
+</header>
+
+<!-- ═══════════ ENTRY FORM ═══════════ -->
+<div class="panel active" id="panel-form">
+  <div class="card">
+    <div class="card-title">🪪 Patient Identification</div>
+    <div class="field-row">
+      <div class="field"><label>CCC Code</label><input type="text" id="ccc" placeholder="CCC-2024-001 (optional)"/></div>
+      <div class="field"><label>Folder Number</label><input type="text" id="folder" placeholder="FLD-00123"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Sex <span>*</span></label>
+        <select id="sex"><option value="">— Select —</option><option>Male</option><option>Female</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Full Name <span>*</span></label><input type="text" id="fullname" placeholder="Last, First Middle"/></div>
+    <div class="field-row">
+      <div class="field"><label>Date of Birth <span>*</span></label><input type="date" id="dob" onchange="calcAge()"/></div>
+      <div class="field"><label>Age (auto)</label><input type="text" id="age" class="auto-fill" readonly placeholder="—"/></div>
+    </div>
+    <div class="field"><label>Visit Date <span>*</span></label><input type="date" id="visitdate"/></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🛡️ Insurance Information</div>
+    <div class="field-row">
+      <div class="field"><label>Insurance Number</label><input type="text" id="insurance" placeholder="Policy number"/></div>
+      <div class="field"><label>HIN Number</label><input type="text" id="hin" placeholder="HIN number"/></div>
+    </div>
+    <div class="field"><label>Insurance Status <span>*</span></label>
+      <div class="seg">
+        <button class="seg-btn yes" id="btn-insured-yes" onclick="setVal('insured','Insured',this)">✅ Insured</button>
+        <button class="seg-btn no" id="btn-insured-no" onclick="setVal('insured','Non-Insured',this)">❌ Non-Insured</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔄 Visit Type</div>
+    <div class="field"><label>Patient Status <span>*</span></label>
+      <div class="seg">
+        <button class="seg-btn alt" id="btn-status-new" onclick="setVal('status','New',this)">🆕 New</button>
+        <button class="seg-btn alt" id="btn-status-old" onclick="setVal('status','Old',this)">🔁 Old (Returning)</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-save" onclick="saveRecord()">💾 SAVE PATIENT RECORD</button>
+  <button class="btn-clear" onclick="clearForm()">🗑 Clear Form</button>
+</div>
+
+<!-- ═══════════ RECORDS DATABASE ═══════════ -->
+<div class="panel" id="panel-db">
+  <div class="db-toolbar">
+    <input class="search-box" type="search" placeholder="🔍 Search name, CCC…" oninput="renderDB(this.value)"/>
+    <span class="count-badge" id="db-count">0</span>
+  </div>
+  <div id="db-list"></div>
+</div>
+
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<div class="panel" id="panel-dash">
+  <div class="card">
+    <div class="card-title">📅 Monthly Facility Attendance</div>
+    <select class="month-select" id="dash-month" onchange="renderDash()"></select>
+    <div class="stat-grid" style="margin-bottom:14px">
+      <div class="stat-box"><div class="stat-num" id="d-total">0</div><div class="stat-lbl">Total Visits</div></div>
+      <div class="stat-box green"><div class="stat-num" id="d-insured">0</div><div class="stat-lbl">Insured</div></div>
+      <div class="stat-box red"><div class="stat-num" id="d-noninsured">0</div><div class="stat-lbl">Non-Insured</div></div>
+      <div class="stat-box amber"><div class="stat-num" id="d-new">0</div><div class="stat-lbl">New Patients</div></div>
+    </div>
+    <div class="card-title" style="border:none;margin-bottom:8px">By Sex</div>
+    <div id="dash-bars-sex"></div>
+    <div class="card-title" style="border:none;margin-bottom:8px;margin-top:14px">New vs Old</div>
+    <div id="dash-bars-status"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 All-Time Overview</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="all-total">0</div><div class="stat-lbl">Total Records</div></div>
+      <div class="stat-box green"><div class="stat-num" id="all-insured">0</div><div class="stat-lbl">Insured</div></div>
+      <div class="stat-box"><div class="stat-num" id="all-male">0</div><div class="stat-lbl">Male</div></div>
+      <div class="stat-box"><div class="stat-num" id="all-female">0</div><div class="stat-lbl">Female</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SUMMARY REPORT (matches photo) ═══════════ -->
+<div class="panel" id="panel-report">
+  <div class="card report-header-card">
+    <div class="card-title">📋 Monthly Age/Sex/Insurance Summary
+      <button class="btn-export" style="width:auto;padding:6px 12px;margin:0;font-size:0.75rem" onclick="exportReportCSV()">⬇ CSV</button>
+    </div>
+    <div class="report-meta">
+      <div class="field"><label>Month</label><select class="month-select" id="report-month" style="margin:0" onchange="renderReport()"></select></div>
+      <div class="field"><label>Institution</label><input type="text" id="report-institution" placeholder="Institution name" oninput="saveMeta()"/></div>
+    </div>
+    <div class="report-meta">
+      <div class="field"><label>District</label><input type="text" id="report-district" placeholder="District" oninput="saveMeta()"/></div>
+      <div class="field"><label>Region</label><input type="text" id="report-region" placeholder="Region" oninput="saveMeta()"/></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="scroll-hint">↔️ Scroll sideways to view all columns</div>
+    <div class="report-wrap">
+      <table class="report" id="report-table"></table>
+    </div>
+    <p class="export-note">Auto-calculated from saved patient records for the selected month. Values update live as new records are entered.</p>
+  </div>
+</div>
+
+<!-- ═══════════ MONTHLY VISIT LIST ═══════════ -->
+<div class="panel" id="panel-monthlist">
+  <div class="card">
+    <div class="card-title">📑 Monthly Visit List
+      <button class="btn-export" style="width:auto;padding:6px 12px;margin:0;font-size:0.75rem" onclick="exportVisitListExcel()">⬇ Excel (.xlsx)</button>
+    </div>
+    <select class="month-select" id="visitlist-month" onchange="renderVisitList()"></select>
+    <div class="count-badge" id="visitlist-count" style="display:inline-block;margin-bottom:10px">0</div>
+  </div>
+
+  <div class="card">
+    <div class="scroll-hint">↔️ Scroll sideways to view all columns</div>
+    <div class="report-wrap">
+      <table class="report" id="visitlist-table" style="width:100%;table-layout:auto"></table>
+    </div>
+    <p class="export-note">List of all patients who visited the facility in the selected month, with Sex, Age and Insurance status. Tap "Excel" to download as a spreadsheet.</p>
+  </div>
+</div>
+
+<!-- ═══════════ CONSULTING ROOM REGISTER ═══════════ -->
+<div class="panel" id="panel-consult">
+  <div class="card">
+    <div class="card-title">🩺 Consulting Room Register — New Entry</div>
+    <div class="field-row">
+      <div class="field"><label>Date <span>*</span></label><input type="date" id="cr-date"/></div>
+      <div class="field"><label>Patient Number</label><input type="text" id="cr-patientnum" placeholder="e.g. OPD-0234"/></div>
+    </div>
+    <div class="field"><label>Name of Patient <span>*</span></label><input type="text" id="cr-name" placeholder="Full name"/></div>
+    <div class="field"><label>Address (Locality)</label><input type="text" id="cr-address" placeholder="Locality / Town"/></div>
+    <div class="field-row">
+      <div class="field"><label>Age <span>*</span></label><input type="number" min="0" id="cr-age" placeholder="Years"/></div>
+      <div class="field"><label>Age Unit</label>
+        <select id="cr-ageunit"><option value="years">Years</option><option value="months">Months</option><option value="days">Days</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Sex <span>*</span></label>
+      <div class="seg">
+        <button class="seg-btn alt" id="btn-crsex-m" onclick="setVal('crsex','Male',this)">♂ Male</button>
+        <button class="seg-btn alt" id="btn-crsex-f" onclick="setVal('crsex','Female',this)">♀ Female</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔬 Diagnosis & Testing</div>
+    <div class="field"><label>Provisional Diagnosis</label><input type="text" id="cr-provdiag" placeholder="e.g. Suspected Malaria"/></div>
+    <div class="field"><label>RDT (Rapid Diagnostic Test)</label>
+      <div class="seg">
+        <button class="seg-btn yes" id="btn-crref-yes" onclick="setVal('crref','Positive',this)">✅ Positive</button>
+        <button class="seg-btn no" id="btn-crref-no" onclick="setVal('crref','Negative',this)">❌ Negative</button>
+        <button class="seg-btn alt" id="btn-crref-na" onclick="setVal('crref','N/A',this)">— N/A</button>
+      </div>
+    </div>
+    <div class="field"><label>Test Result</label>
+      <div class="seg">
+        <button class="seg-btn no" id="btn-crtest-pos" onclick="setVal('crtest','+',this)">+ Positive</button>
+        <button class="seg-btn yes" id="btn-crtest-neg" onclick="setVal('crtest','-',this)">- Negative</button>
+        <button class="seg-btn alt" id="btn-crtest-na" onclick="setVal('crtest','N/A',this)">N/A</button>
+      </div>
+    </div>
+    <div class="field"><label>Principal Diagnosis <span>*</span></label>
+      <div class="diag-wrap">
+        <div class="tag-input-wrap" id="princdiag-wrap" onclick="document.getElementById('princdiag-input').focus()">
+          <span id="princdiag-tags"></span>
+          <input type="text" id="princdiag-input" class="tag-input" placeholder="Type to search & add..." autocomplete="off"
+            oninput="showDiagDropdown('princ',this.value)" onkeydown="diagKeydown(event,'princ')"/>
+        </div>
+        <div class="diag-dropdown" id="princdiag-dropdown" style="display:none"></div>
+      </div>
+    </div>
+    <div class="field"><label>Status of Principal Diagnoses</label>
+      <div class="seg">
+        <button class="seg-btn alt" id="btn-crprincstatus-new" onclick="setVal('crprincstatus','New',this)">New Case</button>
+        <button class="seg-btn alt" id="btn-crprincstatus-old" onclick="setVal('crprincstatus','Old',this)">Old Case</button>
+      </div>
+    </div>
+    <div class="field"><label>Additional Diagnoses</label>
+      <div class="diag-wrap">
+        <div class="tag-input-wrap" id="adddiag-wrap" onclick="document.getElementById('adddiag-input').focus()">
+          <span id="adddiag-tags"></span>
+          <input type="text" id="adddiag-input" class="tag-input" placeholder="Type to search & add..." autocomplete="off"
+            oninput="showDiagDropdown('add',this.value)" onkeydown="diagKeydown(event,'add')"/>
+        </div>
+        <div class="diag-dropdown" id="adddiag-dropdown" style="display:none"></div>
+      </div>
+    </div>
+    <div class="field"><label>Status of Additional Diagnoses</label>
+      <div class="seg">
+        <button class="seg-btn alt" id="btn-craddstatus-new" onclick="setVal('craddstatus','New',this)">New Case</button>
+        <button class="seg-btn alt" id="btn-craddstatus-old" onclick="setVal('craddstatus','Old',this)">Old Case</button>
+        <button class="seg-btn alt" id="btn-craddstatus-na" onclick="setVal('craddstatus','',this)">None</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📌 Additional Indicators</div>
+    <div class="field"><label>Pregnant Patient?</label>
+      <div class="seg">
+        <button class="seg-btn yes" id="btn-crpreg-yes" onclick="setVal('crpreg','Yes',this)">Yes</button>
+        <button class="seg-btn no" id="btn-crpreg-no" onclick="setVal('crpreg','No',this)">No</button>
+      </div>
+    </div>
+    <div class="field"><label>NHIS Patient?</label>
+      <div class="seg">
+        <button class="seg-btn yes" id="btn-crnhis-yes" onclick="setVal('crnhis','Yes',this)">Yes</button>
+        <button class="seg-btn no" id="btn-crnhis-no" onclick="setVal('crnhis','No',this)">No</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-save" onclick="saveConsultRecord()">💾 SAVE TO CONSULTING REGISTER</button>
+  <button class="btn-clear" onclick="clearConsultForm()">🗑 Clear Form</button>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">📖 Register Entries
+      <button class="btn-export" style="width:auto;padding:6px 12px;margin:0;font-size:0.75rem" onclick="exportConsultExcel()">⬇ Excel (.xlsx)</button>
+    </div>
+    <select class="month-select" id="consult-month" onchange="renderConsultRegister()"></select>
+    <div class="count-badge" id="consult-count" style="display:inline-block;margin-bottom:10px">0</div>
+    <div class="scroll-hint">↔️ Scroll sideways to view all columns</div>
+    <div class="report-wrap">
+      <table class="report" id="consult-table" style="width:100%;table-layout:auto"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MONTHLY MORBIDITY TALLY SHEET ═══════════ -->
+<div class="panel" id="panel-morbidity">
+  <div class="card">
+    <div class="card-title">📈 Monthly Outpatients Morbidity Returns Tally Sheet
+      <button class="btn-export" style="width:auto;padding:6px 12px;margin:0;font-size:0.75rem" onclick="exportMorbidityExcel()">⬇ Excel (.xlsx)</button>
+    </div>
+    <div class="report-meta">
+      <div class="field"><label>Name of Facility</label><input type="text" id="morb-facility" placeholder="Facility name" oninput="saveMeta()"/></div>
+      <div class="field"><label>Month</label><select class="month-select" id="morb-month" style="margin:0" onchange="renderMorbidity()"></select></div>
+    </div>
+    <div class="report-meta">
+      <div class="field"><label>Region</label><input type="text" id="morb-region" placeholder="Region" oninput="saveMeta()"/></div>
+      <div class="field"><label>District</label><input type="text" id="morb-district" placeholder="District" oninput="saveMeta()"/></div>
+    </div>
+    <div class="field"><label>Location</label><input type="text" id="morb-location" placeholder="Location" oninput="saveMeta()"/></div>
+  </div>
+
+  <div class="card">
+    <div class="scroll-hint">↔️ Scroll sideways to view all columns — generated from Consulting Register entries for the selected month</div>
+    <div class="report-wrap">
+      </div><div class="morb-wrap"><table id="morbidity-table"></table>
+    </div>
+    <p class="export-note">Each Principal/Additional Diagnosis is matched to a disease line using keyword matching. Unmatched diagnoses appear in the "Unmatched Diagnoses" list below for review.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ Unmatched Diagnoses</div>
+    <div id="morb-unmatched"></div>
+    <p class="export-note">These diagnosis entries from the register couldn't be auto-matched to a tally sheet line. Edit the diagnosis text in the register to match a known condition keyword, or they will be counted only in "All other cases".</p>
+  </div>
+</div>
+
+<!-- ═══════════ EXPORT ═══════════ -->
+<div class="panel" id="panel-export">
+  <div class="card">
+    <div class="card-title">📤 Export Records</div>
+    <button class="btn-export" onclick="exportCSV()">📄 Download All Records (CSV)</button>
+    <button class="btn-export" style="background:var(--navy)" onclick="exportJSON()">📦 Download JSON Backup</button>
+    <p class="export-note">CSV opens directly in Excel / Google Sheets.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">♻️ Restore Backup</div>
+    <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreJSON(this)"/>
+    <button class="btn-export" style="background:var(--amber);color:#1e293b" onclick="document.getElementById('restore-file').click()">📂 Restore from JSON</button>
+    <p class="export-note">Select a previously saved JSON file to restore all records.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">💾 Storage Usage</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="storage-records">0</div><div class="stat-lbl">Total Records</div></div>
+      <div class="stat-box"><div class="stat-num" id="storage-size">0 KB</div><div class="stat-lbl">Storage Used</div></div>
+    </div>
+    <p class="export-note">Browsers typically allow ~5–10MB of local storage, which fits roughly 15,000–30,000 patient visits.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">🗃️ Archive & Clear Old Records</div>
+    <p class="export-note" style="margin-bottom:10px">
+      Export records up to a chosen date as a backup, then remove them from this device to keep the app fast and free up storage.
+    </p>
+    <div class="field"><label>Archive all records on or before</label><input type="date" id="archive-date"/></div>
+    <button class="btn-export" style="background:var(--blue)" onclick="archiveOldRecords()">📦 Export & Delete Records Up To This Date</button>
+    <p class="export-note">A backup JSON of the archived records downloads automatically before anything is deleted. This cannot be undone.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">💡 Android Tips</div>
+    <div class="step-item"><div class="step-num">📌</div><div class="step-text"><strong>Add to Home Screen:</strong> Open in Chrome → 3-dot menu → "Add to Home Screen".</div></div>
+    <div class="step-item"><div class="step-num">☁️</div><div class="step-text"><strong>Cloud backup:</strong> Upload this HTML file to Google Drive, open it from any device.</div></div>
+    <div class="step-item"><div class="step-num">🔄</div><div class="step-text"><strong>Regular backups:</strong> Export JSON weekly to protect your records.</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL ═══════════ -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-name" id="m-name"></div>
+    <div class="modal-ccc" id="m-ccc"></div>
+    <div class="modal-grid">
+      <div class="modal-field"><label>Sex</label><p id="m-sex"></p></div>
+      <div class="modal-field"><label>Folder Number</label><p id="m-folder"></p></div>
+      <div class="modal-field"><label>Age</label><p id="m-age"></p></div>
+      <div class="modal-field"><label>Date of Birth</label><p id="m-dob"></p></div>
+      <div class="modal-field"><label>Visit Date</label><p id="m-visit"></p></div>
+      <div class="modal-field"><label>Insurance No.</label><p id="m-insurance"></p></div>
+      <div class="modal-field"><label>HIN</label><p id="m-hin"></p></div>
+      <div class="modal-field"><label>Insurance Status</label><p id="m-insured"></p></div>
+      <div class="modal-field"><label>Patient Status</label><p id="m-status"></p></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" onclick="deleteRecord()">🗑 Delete</button>
+      <button class="btn-close-modal" onclick="closeModal()">✓ Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ CONSULT EDIT MODAL ═══════════ -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="modal" style="max-height:92vh">
+    <div class="modal-handle"></div>
+    <div style="font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:14px">✏️ Edit Consulting Record</div>
+    <input type="hidden" id="edit-idx"/>
+    <div class="edit-field-row">
+      <div class="edit-field"><label>Date *</label><input type="date" id="edit-date"/></div>
+      <div class="edit-field"><label>Patient Number</label><input type="text" id="edit-patno" placeholder="OPD-0001"/></div>
+    </div>
+    <div class="edit-field"><label>Name of Patient *</label><input type="text" id="edit-name" placeholder="Full name"/></div>
+    <div class="edit-field"><label>Address (Locality)</label><input type="text" id="edit-address" placeholder="Locality"/></div>
+    <div class="edit-field-row">
+      <div class="edit-field"><label>Age *</label><input type="number" id="edit-age" min="0"/></div>
+      <div class="edit-field"><label>Age Unit</label>
+        <select id="edit-ageunit"><option value="years">Years</option><option value="months">Months</option><option value="days">Days</option></select>
+      </div>
+    </div>
+    <div class="edit-field"><label>Sex *</label>
+      <select id="edit-sex"><option value="">— Select —</option><option>Male</option><option>Female</option></select>
+    </div>
+    <div class="edit-field"><label>Provisional Diagnosis</label><input type="text" id="edit-provdiag"/></div>
+    <div class="edit-field-row">
+      <div class="edit-field"><label>RDT Result</label>
+        <select id="edit-referred"><option>N/A</option><option>Positive</option><option>Negative</option></select>
+      </div>
+      <div class="edit-field"><label>Test Result</label>
+        <select id="edit-testresult"><option>N/A</option><option value="+">+ Positive</option><option value="-">- Negative</option></select>
+      </div>
+    </div>
+    <div class="edit-field"><label>Principal Diagnoses *</label>
+      <div class="diag-wrap">
+        <div class="tag-input-wrap" id="edit-princdiag-wrap" onclick="document.getElementById('edit-princdiag-input').focus()">
+          <span id="edit-princdiag-tags"></span>
+          <input type="text" id="edit-princdiag-input" class="tag-input" placeholder="Type to search & add..." autocomplete="off"
+            oninput="showDiagDropdown('edit-princ',this.value)" onkeydown="diagKeydown(event,'edit-princ')"/>
+        </div>
+        <div class="diag-dropdown" id="edit-princdiag-dropdown" style="display:none"></div>
+      </div>
+    </div>
+    <div class="edit-field"><label>Status of Principal Diagnoses</label>
+      <select id="edit-princstatus"><option value="New">New Case</option><option value="Old">Old Case</option></select>
+    </div>
+    <div class="edit-field"><label>Additional Diagnoses</label>
+      <div class="diag-wrap">
+        <div class="tag-input-wrap" id="edit-adddiag-wrap" onclick="document.getElementById('edit-adddiag-input').focus()">
+          <span id="edit-adddiag-tags"></span>
+          <input type="text" id="edit-adddiag-input" class="tag-input" placeholder="Type to search & add..." autocomplete="off"
+            oninput="showDiagDropdown('edit-add',this.value)" onkeydown="diagKeydown(event,'edit-add')"/>
+        </div>
+        <div class="diag-dropdown" id="edit-adddiag-dropdown" style="display:none"></div>
+      </div>
+    </div>
+    <div class="edit-field"><label>Status of Additional Diagnoses</label>
+      <select id="edit-addstatus"><option value="">None</option><option value="New">New Case</option><option value="Old">Old Case</option></select>
+    </div>
+    <div class="edit-field-row">
+      <div class="edit-field"><label>Pregnant Patient?</label>
+        <select id="edit-pregnant"><option>No</option><option>Yes</option></select>
+      </div>
+      <div class="edit-field"><label>NHIS Patient?</label>
+        <select id="edit-nhis"><option>No</option><option>Yes</option></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn-delete" onclick="deleteConsultFromEdit()">🗑 Delete</button>
+      <button class="btn-edit-save" onclick="saveConsultEdit()">💾 Save Changes</button>
+    </div>
+    <button class="btn-clear" onclick="closeEditModal()" style="margin-top:8px">✕ Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const STORAGE_KEY="patient_records_v2";
+const META_KEY="report_meta_v2";
+const CONSULT_KEY="consult_register_v1";
+let records=[],activeIdx=null;
+let consultRecords=[],consultFormVals={crsex:'',crref:'',crtest:'',crprincstatus:'',craddstatus:'',crpreg:'',crnhis:''};
+let formVals={insured:'',status:''};
+
+function load(){try{records=JSON.parse(localStorage.getItem(STORAGE_KEY))||[];}catch{records=[];}}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(records));}
+load();
+function loadConsult(){try{consultRecords=JSON.parse(localStorage.getItem(CONSULT_KEY))||[];}catch{consultRecords=[];}}
+function saveConsult(){localStorage.setItem(CONSULT_KEY,JSON.stringify(consultRecords));}
+
+// Always silently re-tally morbidity whenever consulting data changes
+// so the report is immediately up-to-date when you switch to that tab
+function refreshMorbidityIfActive(){
+  try{ renderMorbidity(); }catch(e){}
+}
+loadConsult();
+
+// ── 97-LINE MORBIDITY DISEASE LIST (matches Tally Sheet photo) ──
+// Each entry: line number, label, section, and keyword(s) for auto-matching diagnosis text
+const MORBIDITY_DISEASES=[
+  {n:1,label:"AFP (Polio)",section:"COMMUNICABLE IMMUNIZABLE",kw:["afp","polio"]},
+  {n:2,label:"Meningitis",section:"COMMUNICABLE IMMUNIZABLE",kw:["meningitis"]},
+  {n:3,label:"Neo-natal Tetanus",section:"COMMUNICABLE IMMUNIZABLE",kw:["neo-natal tetanus","neonatal tetanus"]},
+  {n:4,label:"Pertussis (Whooping Cough)",section:"COMMUNICABLE IMMUNIZABLE",kw:["pertussis","whooping cough"]},
+  {n:5,label:"Diphtheria",section:"COMMUNICABLE IMMUNIZABLE",kw:["diphtheria"]},
+  {n:6,label:"Measles",section:"COMMUNICABLE IMMUNIZABLE",kw:["measles"]},
+  {n:7,label:"Yellow Fever (YF)",section:"COMMUNICABLE IMMUNIZABLE",kw:["yellow fever"]},
+  {n:8,label:"Tetanus",section:"COMMUNICABLE IMMUNIZABLE",kw:["tetanus"]},
+
+  {n:9,label:"Uncomplicated Malaria Suspected",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["suspected malaria","malaria suspected"]},
+  {n:10,label:"Uncomplicated Malaria Suspected Tested",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria suspected tested"]},
+  {n:11,label:"Uncomplicated Malaria Tested Positive",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria positive","malaria tested positive","malaria +","rdt positive"]},
+  {n:12,label:"Uncomplicated Malaria not tested but treated as malaria",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria not tested","treated as malaria"]},
+  {n:13,label:"Uncomplicated Malaria in Pregnancy suspected",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria in pregnancy suspected","malaria pregnancy suspected"]},
+  {n:14,label:"Uncomplicated Malaria in Pregnancy Suspected Tested",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria pregnancy suspected tested"]},
+  {n:15,label:"Uncomplicated Malaria in Pregnancy tested positive (Malaria PLC)",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria pregnancy positive","malaria plc"]},
+  {n:16,label:"Uncomplicated Malaria in Pregnancy not tested but treated as malaria",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria pregnancy not tested"]},
+  {n:17,label:"Typhoid Fever",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["typhoid"]},
+  {n:18,label:"Diarrhoea Diseases",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["diarrhoea","diarrhea","enteritis","gastroenteritis","gastritis","enteric fever","gastro"]},
+  {n:19,label:"Viral Hepatitis",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["hepatitis"]},
+  {n:20,label:"Schistosomiasis (Bilharzia)",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["schistosomiasis","bilharzia"]},
+  {n:21,label:"Onchocerciasis",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["onchocerciasis"]},
+  {n:22,label:"HIV/AIDS related conditions",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["hiv","aids"]},
+  {n:23,label:"Mumps",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["mumps"]},
+  {n:24,label:"Intestinal Worms",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["intestinal worms","helminth","worms"]},
+  {n:25,label:"Chicken Pox",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["chicken pox","chickenpox","varicella"]},
+  {n:26,label:"Upper Respiratory Tract Infection",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["urti","upper respiratory","uri","sinusitis","common cold","rhinitis","nasopharyngitis","pharyngitis","laryngitis","tonsillitis","coryza","catarrh"]},
+  {n:27,label:"Pneumonia",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["pneumonia"]},
+  {n:28,label:"Septicaemia",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["septicaemia","septicemia","sepsis"]},
+
+  {n:29,label:"Malnutrition",section:"NON-COMMUNICABLE DISEASES",kw:["malnutrition"]},
+  {n:30,label:"Obesity",section:"NON-COMMUNICABLE DISEASES",kw:["obesity","obese"]},
+  {n:31,label:"Anaemia",section:"NON-COMMUNICABLE DISEASES",kw:["anaemia","anemia"]},
+  {n:32,label:"Other Nutritional Diseases",section:"NON-COMMUNICABLE DISEASES",kw:["nutritional disease"]},
+  {n:33,label:"Hypertension",section:"NON-COMMUNICABLE DISEASES",kw:["newly diagnosed hypertension","new hypertension","newly-diagnosed hypertension","new case hypertension","hypertension new","htn new"],special:"hypertension"},
+  {n:34,label:"Cardiac Diseases",section:"NON-COMMUNICABLE DISEASES",kw:["cardiac","heart disease","heart failure"]},
+  {n:35,label:"Stroke",section:"NON-COMMUNICABLE DISEASES",kw:["stroke","cva"]},
+  {n:36,label:"Diabetes Mellitus",section:"NON-COMMUNICABLE DISEASES",kw:["newly diagnosed diabetes","new diabetes","newly-diagnosed diabetes","new case diabetes","diabetes new","dm new"],special:"diabetes"},
+  {n:37,label:"Rheumatism & Other Joint Pains",section:"NON-COMMUNICABLE DISEASES",kw:["rheumatism","joint pain","arthritis","msp","musculoskeletal pain","peripheral neuropathy"," pn ","pn)","(pn","poly neuropathy","polyneuropathy","back pain","neck pain","low back","lumbago","fibromyalgia","osteoarthritis","gout","myalgia"]},
+  {n:38,label:"Sickel Cell Disease",section:"NON-COMMUNICABLE DISEASES",kw:["sickle cell","sickel cell"]},
+  {n:39,label:"Asthma",section:"NON-COMMUNICABLE DISEASES",kw:["asthma"]},
+  {n:40,label:"Chronic Obstructed Pulmonary Disease(COPD)",section:"NON-COMMUNICABLE DISEASES",kw:["copd","chronic obstructive pulmonary"]},
+  {n:41,label:"Breast Cancer",section:"NON-COMMUNICABLE DISEASES",kw:["breast cancer"]},
+  {n:42,label:"Cervical Cancer",section:"NON-COMMUNICABLE DISEASES",kw:["cervical cancer"]},
+  {n:43,label:"Lymphoma",section:"NON-COMMUNICABLE DISEASES",kw:["lymphoma"]},
+  {n:44,label:"Prostate cancer",section:"NON-COMMUNICABLE DISEASES",kw:["prostate cancer"]},
+  {n:45,label:"Hepatocellular Carcinoma",section:"NON-COMMUNICABLE DISEASES",kw:["hepatocellular","liver cancer"]},
+  {n:46,label:"All other cancers",section:"NON-COMMUNICABLE DISEASES",kw:["cancer","carcinoma","tumour","tumor","malignan"]},
+
+  {n:47,label:"Schizophrenia",section:"MENTAL HEALTH CONDITIONS",kw:["schizophrenia"]},
+  {n:48,label:"Acute Psychotic Disorder",section:"MENTAL HEALTH CONDITIONS",kw:["psychotic","psychosis"]},
+  {n:49,label:"Mono symptoms Delusion",section:"MENTAL HEALTH CONDITIONS",kw:["delusion"]},
+  {n:50,label:"Depression",section:"MENTAL HEALTH CONDITIONS",kw:["depression"]},
+  {n:51,label:"Substance Abuse",section:"MENTAL HEALTH CONDITIONS",kw:["substance abuse","drug abuse","alcohol abuse"]},
+  {n:52,label:"Epilepsy",section:"MENTAL HEALTH CONDITIONS",kw:["epilepsy","seizure"]},
+  {n:53,label:"Autism",section:"MENTAL HEALTH CONDITIONS",kw:["autism"]},
+  {n:54,label:"Mental Retardation",section:"MENTAL HEALTH CONDITIONS",kw:["mental retardation","intellectual disability"]},
+  {n:55,label:"Attention Deficit Hyperactivity Disorder",section:"MENTAL HEALTH CONDITIONS",kw:["adhd","attention deficit"]},
+  {n:56,label:"Conversion Disorders",section:"MENTAL HEALTH CONDITIONS",kw:["conversion disorder"]},
+  {n:57,label:"Post Traumatic Stress Syndrome",section:"MENTAL HEALTH CONDITIONS",kw:["ptsd","post traumatic"]},
+  {n:58,label:"Generalized Anxiety",section:"MENTAL HEALTH CONDITIONS",kw:["generalized anxiety","gad"]},
+  {n:59,label:"Other Anxiety Disorders",section:"MENTAL HEALTH CONDITIONS",kw:["anxiety"]},
+
+  {n:60,label:"Acute Eye Infection",section:"SPECIALIZED CONDITIONS",kw:["eye infection","conjunctivitis"]},
+  {n:61,label:"Cataract",section:"SPECIALIZED CONDITIONS",kw:["cataract"]},
+  {n:62,label:"Trachoma",section:"SPECIALIZED CONDITIONS",kw:["trachoma"]},
+  {n:63,label:"Otitis Media",section:"SPECIALIZED CONDITIONS",kw:["otitis media"]},
+  {n:64,label:"Other Acute Ear Infection",section:"SPECIALIZED CONDITIONS",kw:["ear infection","otitis"]},
+  {n:65,label:"Dental Caries",section:"SPECIALIZED CONDITIONS",kw:["dental caries","tooth decay","cavity"]},
+  {n:66,label:"Dental Swellings",section:"SPECIALIZED CONDITIONS",kw:["dental swelling"]},
+  {n:67,label:"Tramatic Conditions (Oral and Maxillofacilal region)",section:"SPECIALIZED CONDITIONS",kw:["oral trauma","maxillofacial"]},
+  {n:68,label:"Periodontal diseases",section:"SPECIALIZED CONDITIONS",kw:["periodontal","gum disease"]},
+  {n:69,label:"Cerebral palsy",section:"SPECIALIZED CONDITIONS",kw:["cerebral palsy"]},
+  {n:70,label:"Liver diseases",section:"SPECIALIZED CONDITIONS",kw:["liver disease","cirrhosis"]},
+  {n:71,label:"Acute Urinary Tract Infection",section:"SPECIALIZED CONDITIONS",kw:["uti","urinary tract infection"]},
+  {n:72,label:"Skin Diseases",section:"SPECIALIZED CONDITIONS",kw:["skin disease","rash","dermatitis","eczema","seborrheic","seborrhoeic","contact dermatitis","infective dermatitis","atopic","psoriasis","tinea","ringworm","impetigo","scabies","urticaria","hives","pruritus","skin rash","skin infection","cellulitis","folliculitis","acne","boil","abscess","furuncle"]},
+  {n:73,label:"Ulcers",section:"SPECIALIZED CONDITIONS",kw:["ulcer"]},
+  {n:74,label:"Kidney Related Diseases",section:"SPECIALIZED CONDITIONS",kw:["kidney disease","renal"]},
+
+  {n:75,label:"Gynaecological Conditions",section:"OBSTETRIC & GYNAECOLOGICAL CONDITIONS",kw:["gynaecological","gynecological"]},
+  {n:76,label:"Pregnancy Related Complications",section:"OBSTETRIC & GYNAECOLOGICAL CONDITIONS",kw:["pregnancy complication","pregnancy related"]},
+  {n:77,label:"Anaemia in Pregnancy",section:"OBSTETRIC & GYNAECOLOGICAL CONDITIONS",kw:["anaemia in pregnancy","anemia in pregnancy"]},
+
+  {n:78,label:"Genital Ulcer",section:"REPRODUCTIVE TRACT DISEASES",kw:["genital ulcer"]},
+  {n:79,label:"Vaginal Discharge",section:"REPRODUCTIVE TRACT DISEASES",kw:["vaginal discharge"]},
+  {n:80,label:"Urethral Discharge",section:"REPRODUCTIVE TRACT DISEASES",kw:["urethral discharge"]},
+  {n:81,label:"Other Disease of the Male Reproductive System",section:"REPRODUCTIVE TRACT DISEASES",kw:["male reproductive"]},
+  {n:82,label:"Other Disease of the Female Reproductive System",section:"REPRODUCTIVE TRACT DISEASES",kw:["female reproductive"]},
+
+  {n:83,label:"Transport injuries",section:"INJURIES AND OTHERS",kw:["transport injury","road traffic","rta","accident"]},
+  {n:84,label:"Home injuries",section:"INJURIES AND OTHERS",kw:["home injury"]},
+  {n:85,label:"Occupational Injuries",section:"INJURIES AND OTHERS",kw:["occupational injury","work injury"]},
+  {n:86,label:"Burns",section:"INJURIES AND OTHERS",kw:["burn"]},
+  {n:87,label:"Poisoning",section:"INJURIES AND OTHERS",kw:["poisoning","poison"]},
+  {n:88,label:"Dog bite",section:"INJURIES AND OTHERS",kw:["dog bite"]},
+  {n:89,label:"Human bite",section:"INJURIES AND OTHERS",kw:["human bite"]},
+  {n:90,label:"Snake bite",section:"INJURIES AND OTHERS",kw:["snake bite","snakebite"]},
+  {n:91,label:"Sexual Abuse",section:"INJURIES AND OTHERS",kw:["sexual abuse"]},
+  {n:92,label:"Domestic Violence",section:"INJURIES AND OTHERS",kw:["domestic violence"]},
+  {n:93,label:"Pyrexia of unknown origin (PUO) (not Malaria)",section:"INJURIES AND OTHERS",kw:["puo","pyrexia of unknown","fever of unknown"]},
+  {n:94,label:"Brought in Dead",section:"INJURIES AND OTHERS",kw:["brought in dead","bid"]},
+  {n:95,label:"All other cases",section:"INJURIES AND OTHERS",kw:[]}, // catch-all
+  {n:97,label:"Referrals",section:"INJURIES AND OTHERS",kw:["referral","referred"]},
+];
+// age columns for morbidity sheet (matches photo)
+const MORB_AGE_COLS=[
+  {key:'0_28d',label:'0-28 Days\n(Neonatal)'},
+  {key:'1_11m',label:'1-11 M\n(Post Neonatal)'},
+  {key:'1_4',label:'1-4'},
+  {key:'5_9',label:'5-9'},
+  {key:'10_14',label:'10-14'},
+  {key:'15_17',label:'15-17'},
+  {key:'18_19',label:'18-19'},
+  {key:'20_34',label:'20-34'},
+  {key:'35_49',label:'35-49'},
+  {key:'50_59',label:'50-59'},
+  {key:'60_69',label:'60-69'},
+  {key:'70p',label:'70+'},
+];
+function morbAgeColKey(years){
+  if(years<1)return null; // handled via days/months separately
+  if(years<=4)return '1_4';
+  if(years<=9)return '5_9';
+  if(years<=14)return '10_14';
+  if(years<=17)return '15_17';
+  if(years<=19)return '18_19';
+  if(years<=34)return '20_34';
+  if(years<=49)return '35_49';
+  if(years<=59)return '50_59';
+  if(years<=69)return '60_69';
+  return '70p';
+}
+function matchDisease(diagText, princStatus){
+  if(!diagText)return null;
+  const t=diagText.toLowerCase().trim();
+  if(!t)return null;
+
+  // ── Special: Referral ──
+  if(t.includes('referral') || t.includes('referred')) return 97;
+
+
+  // ── Special: Malaria rules ──
+  if(t==='rdt positive' || t.includes('rdt positive')) return 11;
+  if(t==='malaria' || t.includes('provisional malaria') || t.includes('malaria provisional')) return null;
+  if(t.includes('suspected malaria') || t.includes('malaria suspected')) return 9;
+
+  // ── Special: Hypertension ──
+  // "known hypertension / known HTN / hypertension (old)" → re-attendance (return 'REATTEND')
+  // "newly diagnosed / new hypertension / hypertension" with New Case status → row 33
+  const isHtn = t.includes('hypertension')||t.includes('high blood pressure')||(t==='htn');
+  if(isHtn){
+    const isKnown = t.includes('known')||t.includes('old')||t.includes('established')||t.includes('chronic')||(princStatus==='Old');
+    if(isKnown) return 'REATTEND';
+    return 33; // newly diagnosed hypertension → row 33
+  }
+
+  // ── Special: Diabetes Mellitus ──
+  const isDm = t.includes('diabetes')||(t==='dm')||t.includes('diabetic');
+  if(isDm){
+    const isKnown = t.includes('known')||t.includes('old')||t.includes('established')||t.includes('chronic')||(princStatus==='Old');
+    if(isKnown) return 'REATTEND';
+    return 36; // newly diagnosed diabetes → row 36
+  }
+
+  // ── General keyword match ──
+  for(const d of MORBIDITY_DISEASES){
+    if(d.special) continue; // skip special-handled diseases
+    for(const kw of d.kw){
+      if(t.includes(kw)) return d.n;
+    }
+  }
+  return null; // unmatched
+}
+function populateDiseaseList(){ /* disease list now handled by ALL_DIAG_OPTIONS tag system */ }
+
+// ── TABS ──
+function switchTab(tab,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  el.classList.add('active');
+  if(tab==='db')renderDB();
+  if(tab==='dash')renderDash();
+  if(tab==='report')renderReport();
+  if(tab==='monthlist')renderVisitList();
+  if(tab==='consult'){renderConsultRegister();populateDiseaseList();}
+  if(tab==='morbidity'){
+    // sync month with consulting register selection
+    const cMonth=document.getElementById('consult-month')?.value;
+    const mMonth=document.getElementById('morb-month');
+    if(cMonth&&mMonth&&mMonth.querySelector(`option[value="${cMonth}"]`)) mMonth.value=cMonth;
+    renderMorbidity();
+  }
+  if(tab==='export')renderStorageStats();
+}
+
+// ── AGE CALC ──
+function calcAge(){
+  const dob=document.getElementById('dob').value;
+  if(!dob){document.getElementById('age').value='';return;}
+  const t=new Date(),b=new Date(dob);
+  let a=t.getFullYear()-b.getFullYear();
+  let months=t.getMonth()-b.getMonth();
+  if(months<0||(months===0&&t.getDate()<b.getDate())){a--;months+=12;}
+  if(a<1){
+    // express in months for under-1
+    let totalMonths=(t.getFullYear()-b.getFullYear())*12+(t.getMonth()-b.getMonth());
+    if(t.getDate()<b.getDate())totalMonths--;
+    document.getElementById('age').value=totalMonths+' months';
+  } else {
+    document.getElementById('age').value=a+' years';
+  }
+}
+
+// ── SEGMENT TOGGLES ──
+function setVal(group,val,btn){
+  if(group.startsWith('cr')) consultFormVals[group]=val;
+  else formVals[group]=val;
+  const prefix='btn-'+group+'-';
+  document.querySelectorAll('[id^="'+prefix+'"]').forEach(b=>b.classList.remove('selected'));
+  if(val!=='') btn.classList.add('selected');
+}
+
+// ── AGE GROUP BUCKETING (matches the report photo) ──
+const AGE_GROUPS=[
+  {key:'0_28days', label:'0–28 days', test:(ageStr,dobStr)=>{
+    const days=daysSince(dobStr); return days<=28;
+  }},
+  {key:'0_11months', label:'0–11 Months', test:(ageStr,dobStr)=>{
+    const days=daysSince(dobStr); const months=monthsSince(dobStr);
+    return days>28 && months<12;
+  }},
+  {key:'1_4', label:'1–4 Years', test:(a)=>a>=1&&a<=4},
+  {key:'5_9', label:'5–9 Years', test:(a)=>a>=5&&a<=9},
+  {key:'10_14', label:'10–14 Years', test:(a)=>a>=10&&a<=14},
+  {key:'15_17', label:'15–17 Years', test:(a)=>a>=15&&a<=17},
+  {key:'18_19', label:'18–19 Years', test:(a)=>a>=18&&a<=19},
+  {key:'20_34', label:'20–34 Years', test:(a)=>a>=20&&a<=34},
+  {key:'35_49', label:'35–49 Years', test:(a)=>a>=35&&a<=49},
+  {key:'50_59', label:'50–59 Years', test:(a)=>a>=50&&a<=59},
+  {key:'60_69', label:'60–69 Years', test:(a)=>a>=60&&a<=69},
+  {key:'70plus', label:'70Yrs & Above', test:(a)=>a>=70},
+];
+function daysSince(dobStr){
+  if(!dobStr)return 9999;
+  const ms=new Date()-new Date(dobStr);
+  return Math.floor(ms/(1000*60*60*24));
+}
+function monthsSince(dobStr){
+  if(!dobStr)return 9999;
+  const t=new Date(),b=new Date(dobStr);
+  let m=(t.getFullYear()-b.getFullYear())*12+(t.getMonth()-b.getMonth());
+  if(t.getDate()<b.getDate())m--;
+  return m;
+}
+function getAgeYears(dobStr){
+  if(!dobStr)return -1;
+  const t=new Date(),b=new Date(dobStr);
+  let a=t.getFullYear()-b.getFullYear();
+  if(t.getMonth()-b.getMonth()<0||(t.getMonth()-b.getMonth()===0&&t.getDate()<b.getDate()))a--;
+  return a;
+}
+function getAgeGroupKey(dobStr){
+  const ageYears=getAgeYears(dobStr);
+  for(const g of AGE_GROUPS){
+    if(g.key==='0_28days'||g.key==='0_11months'){
+      if(g.test(null,dobStr))return g.key;
+    } else {
+      if(g.test(ageYears))return g.key;
+    }
+  }
+  return '70plus';
+}
+
+// ── SAVE RECORD ──
+function saveRecord(){
+  const ccc=document.getElementById('ccc').value.trim();
+  const fullname=document.getElementById('fullname').value.trim();
+  const dob=document.getElementById('dob').value;
+  const sex=document.getElementById('sex').value;
+  const visitdate=document.getElementById('visitdate').value;
+
+  if(!fullname){showToast('⚠️ Full Name is required','error');return;}
+  if(!sex){showToast('⚠️ Please select Sex','error');return;}
+  if(!dob){showToast('⚠️ Date of Birth is required','error');return;}
+  if(!visitdate){showToast('⚠️ Visit Date is required','error');return;}
+  if(!formVals.insured){showToast('⚠️ Select Insurance Status','error');return;}
+  if(!formVals.status){showToast('⚠️ Select New or Old patient','error');return;}
+
+  records.push({
+    ccc:ccc||'—',fullname,sex,dob,
+    folder:document.getElementById('folder').value.trim()||'—',
+    age:document.getElementById('age').value,
+    visitdate,
+    insurance:document.getElementById('insurance').value.trim()||'—',
+    hin:document.getElementById('hin').value.trim()||'—',
+    insured:formVals.insured,
+    status:formVals.status,
+    createdAt:new Date().toISOString()
+  });
+  save();clearForm();showToast('✅ Patient record saved!','success');
+}
+
+function clearForm(){
+  ['ccc','folder','fullname','dob','age','insurance','hin','visitdate'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sex').value='';
+  formVals={insured:'',status:''};
+  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('selected'));
+}
+
+// ── RENDER RECORDS DB ──
+function renderDB(q=''){
+  const list=document.getElementById('db-list');
+  const ql=q.toLowerCase();
+  const f=records.filter(r=>r.fullname.toLowerCase().includes(ql)||r.ccc.toLowerCase().includes(ql));
+  document.getElementById('db-count').textContent=f.length+' / '+records.length;
+  if(!f.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">${records.length?'🔍':'📋'}</div><p>${records.length?'No results found.':'No patients yet.<br/>Use the Entry Form to add records.'}</p></div>`;
+    return;
+  }
+  list.innerHTML=f.map(r=>{
+    const i=records.indexOf(r);
+    return `<div class="patient-card" onclick="openModal(${i})">
+      <div class="patient-name">${r.fullname}</div>
+      <div class="patient-meta">${r.ccc} · 📁${r.folder} · ${r.sex} · ${r.age} · Visit: ${r.visitdate}</div>
+      <div class="patient-tags">
+        <span class="tag ${r.insured==='Insured'?'tag-green':'tag-red'}">${r.insured==='Insured'?'✅ Insured':'❌ Non-Insured'}</span>
+        <span class="tag ${r.status==='New'?'tag-amber':'tag-purple'}">${r.status==='New'?'🆕 New':'🔁 Old'}</span>
+        <span class="tag tag-blue">📅 ${r.visitdate}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL ──
+function openModal(i){
+  activeIdx=i;const r=records[i];
+  document.getElementById('m-name').textContent=r.fullname;
+  document.getElementById('m-ccc').textContent='CCC: '+r.ccc;
+  document.getElementById('m-sex').textContent=r.sex;
+  document.getElementById('m-folder').textContent=r.folder;
+  document.getElementById('m-age').textContent=r.age;
+  document.getElementById('m-dob').textContent=r.dob;
+  document.getElementById('m-visit').textContent=r.visitdate;
+  document.getElementById('m-insurance').textContent=r.insurance;
+  document.getElementById('m-hin').textContent=r.hin;
+  document.getElementById('m-insured').textContent=r.insured;
+  document.getElementById('m-status').textContent=r.status;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
+function deleteRecord(){
+  if(activeIdx===null)return;
+  if(!confirm('Delete this record?'))return;
+  records.splice(activeIdx,1);save();
+  document.getElementById('modal').classList.remove('open');
+  renderDB(document.querySelector('#panel-db .search-box').value);
+  showToast('🗑 Record deleted','error');
+}
+
+// ── MONTH HELPERS ──
+function getMonthsList(){
+  const months=new Set();
+  records.forEach(r=>{ if(r.visitdate) months.add(r.visitdate.slice(0,7)); });
+  const arr=Array.from(months).sort().reverse();
+  const now=new Date().toISOString().slice(0,7);
+  if(!arr.includes(now))arr.unshift(now);
+  return arr;
+}
+function monthLabel(ym){
+  const [y,m]=ym.split('-');
+  const names=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return names[parseInt(m,10)-1]+' '+y;
+}
+function populateMonthSelects(){
+  const months=getMonthsList();
+  ['dash-month','report-month','visitlist-month'].forEach(id=>{
+    const sel=document.getElementById(id);
+    const prev=sel.value;
+    sel.innerHTML=months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+    if(months.includes(prev))sel.value=prev;
+  });
+}
+
+// ── DASHBOARD ──
+function renderDash(){
+  populateMonthSelects();
+  const month=document.getElementById('dash-month').value;
+  const recs=records.filter(r=>r.visitdate&&r.visitdate.slice(0,7)===month);
+
+  document.getElementById('d-total').textContent=recs.length;
+  document.getElementById('d-insured').textContent=recs.filter(r=>r.insured==='Insured').length;
+  document.getElementById('d-noninsured').textContent=recs.filter(r=>r.insured==='Non-Insured').length;
+  document.getElementById('d-new').textContent=recs.filter(r=>r.status==='New').length;
+
+  const male=recs.filter(r=>r.sex==='Male').length;
+  const female=recs.filter(r=>r.sex==='Female').length;
+  const maxSex=Math.max(male,female,1);
+  document.getElementById('dash-bars-sex').innerHTML=
+    bar('Male',male,maxSex,'m')+bar('Female',female,maxSex,'f');
+
+  const newC=recs.filter(r=>r.status==='New').length;
+  const oldC=recs.filter(r=>r.status==='Old').length;
+  const maxStat=Math.max(newC,oldC,1);
+  document.getElementById('dash-bars-status').innerHTML=
+    bar('New',newC,maxStat,'m')+bar('Old',oldC,maxStat,'f');
+
+  // all-time
+  document.getElementById('all-total').textContent=records.length;
+  document.getElementById('all-insured').textContent=records.filter(r=>r.insured==='Insured').length;
+  document.getElementById('all-male').textContent=records.filter(r=>r.sex==='Male').length;
+  document.getElementById('all-female').textContent=records.filter(r=>r.sex==='Female').length;
+}
+function bar(label,val,max,cls){
+  const pct=Math.round((val/max)*100);
+  return `<div class="bar-row"><div class="bar-label">${label}</div><div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%">${val}</div></div></div>`;
+}
+
+// ── SUMMARY REPORT (matches photo layout) ──
+function loadMeta(){try{return JSON.parse(localStorage.getItem(META_KEY))||{};}catch{return {};}}
+function saveMeta(){
+  const meta={
+    institution:document.getElementById('report-institution').value,
+    district:document.getElementById('report-district').value,
+    region:document.getElementById('report-region').value,
+    facility:el('morb-facility'),
+    morbregion:el('morb-region'),
+    morbdistrict:el('morb-district'),
+    location:el('morb-location')
+  };
+  localStorage.setItem(META_KEY,JSON.stringify(meta));
+}
+function el(id){const e=document.getElementById(id);return e?e.value:'';}
+function applyMeta(){
+  const meta=loadMeta();
+  document.getElementById('report-institution').value=meta.institution||'';
+  document.getElementById('report-district').value=meta.district||'';
+  document.getElementById('report-region').value=meta.region||'';
+  if(document.getElementById('morb-facility')){
+    document.getElementById('morb-facility').value=meta.facility||'';
+    document.getElementById('morb-region').value=meta.morbregion||meta.region||'';
+    document.getElementById('morb-district').value=meta.morbdistrict||meta.district||'';
+    document.getElementById('morb-location').value=meta.location||'';
+  }
+}
+
+function renderReport(){
+  populateMonthSelects();
+  applyMeta();
+  const month=document.getElementById('report-month').value;
+  const recs=records.filter(r=>r.visitdate&&r.visitdate.slice(0,7)===month);
+
+  // build counts: ageGroupKey -> { insNewM,insNewF,insOldM,insOldF, niNewM,niNewF,niOldM,niOldF }
+  const counts={};
+  AGE_GROUPS.forEach(g=>counts[g.key]={iNM:0,iNF:0,iOM:0,iOF:0,nNM:0,nNF:0,nOM:0,nOF:0});
+
+  recs.forEach(r=>{
+    const gk=getAgeGroupKey(r.dob);
+    const c=counts[gk];
+    const sexKey=r.sex==='Male'?'M':'F';
+    const insKey=r.insured==='Insured'?'i':'n';
+    const statKey=r.status==='New'?'N':'O';
+    const field=insKey+statKey+sexKey; // e.g. iNM, nOF
+    if(c[field]!==undefined)c[field]++;
+  });
+
+  // header
+  let html=`<colgroup>
+    <col class="age">
+    ${Array.from({length:10}).map(()=>'<col class="data">').join('')}
+  </colgroup>
+  <thead>
+    <tr>
+      <th rowspan="3" class="age-label" style="background:var(--navy);color:#fff">AGE GROUP</th>
+      <th colspan="4" class="grp-insured" style="color:#1a3a5c">INSURED PATIENTS</th>
+      <th colspan="4" class="grp-noninsured" style="color:#1a3a5c">NON-INSURED PATIENTS</th>
+      <th colspan="2" class="grp-total" style="color:#1a3a5c">TOTAL</th>
+    </tr>
+    <tr>
+      <th colspan="2" class="grp-insured">NEW</th>
+      <th colspan="2" class="grp-insured">OLD</th>
+      <th colspan="2" class="grp-noninsured">NEW</th>
+      <th colspan="2" class="grp-noninsured">OLD</th>
+      <th colspan="2" class="grp-total"></th>
+    </tr>
+    <tr>`;
+  html+=`<th class="grp-insured">MALE</th><th class="grp-insured">FEMALE</th>`;
+  html+=`<th class="grp-insured">MALE</th><th class="grp-insured">FEMALE</th>`;
+  html+=`<th class="grp-noninsured">MALE</th><th class="grp-noninsured">FEMALE</th>`;
+  html+=`<th class="grp-noninsured">MALE</th><th class="grp-noninsured">FEMALE</th>`;
+  html+=`<th class="grp-total">MALE</th><th class="grp-total">FEMALE</th>`;
+  html+=`</tr></thead><tbody>`;
+
+  // Body rows
+  const totals={iNM:0,iNF:0,iOM:0,iOF:0,nNM:0,nNF:0,nOM:0,nOF:0};
+  AGE_GROUPS.forEach(g=>{
+    const c=counts[g.key];
+    Object.keys(totals).forEach(k=>totals[k]+=c[k]);
+    const totM=c.iNM+c.iOM+c.nNM+c.nOM;
+    const totF=c.iNF+c.iOF+c.nNF+c.nOF;
+    html+=`<tr>
+      <td class="age-label">${g.label}</td>
+      <td>${cell(c.iNM)}</td><td>${cell(c.iNF)}</td>
+      <td>${cell(c.iOM)}</td><td>${cell(c.iOF)}</td>
+      <td>${cell(c.nNM)}</td><td>${cell(c.nNF)}</td>
+      <td>${cell(c.nOM)}</td><td>${cell(c.nOF)}</td>
+      <td><b>${totM}</b></td><td><b>${totF}</b></td>
+    </tr>`;
+  });
+
+  // Total row
+  const grandM=totals.iNM+totals.iOM+totals.nNM+totals.nOM;
+  const grandF=totals.iNF+totals.iOF+totals.nNF+totals.nOF;
+  html+=`<tr class="total-row">
+    <td class="age-label">Total All Ages</td>
+    <td>${totals.iNM}</td><td>${totals.iNF}</td>
+    <td>${totals.iOM}</td><td>${totals.iOF}</td>
+    <td>${totals.nNM}</td><td>${totals.nNF}</td>
+    <td>${totals.nOM}</td><td>${totals.nOF}</td>
+    <td>${grandM}</td><td>${grandF}</td>
+  </tr>`;
+  html+=`</tbody>`;
+
+  document.getElementById('report-table').innerHTML=html;
+  window._lastReportData={month,counts,totals,grandM,grandF};
+}
+function cell(v){ return v===0?'<span style="color:#cbd5e1">0</span>':v; }
+
+function exportReportCSV(){
+  const month=document.getElementById('report-month').value;
+  if(!window._lastReportData){showToast('⚠️ Generate the report first','error');return;}
+  const inst=document.getElementById('report-institution').value;
+  const dist=document.getElementById('report-district').value;
+  const reg=document.getElementById('report-region').value;
+  let rows=[];
+  rows.push([`Institution: ${inst}`]);
+  rows.push([`District: ${dist}`]);
+  rows.push([`Region: ${reg}`]);
+  rows.push([`Month: ${monthLabel(month)}`]);
+  rows.push([]);
+  rows.push(['AGE GROUP','INS-NEW-M','INS-NEW-F','INS-OLD-M','INS-OLD-F','NONINS-NEW-M','NONINS-NEW-F','NONINS-OLD-M','NONINS-OLD-F','TOTAL-M','TOTAL-F']);
+  const {counts,totals,grandM,grandF}=window._lastReportData;
+  AGE_GROUPS.forEach(g=>{
+    const c=counts[g.key];
+    const totM=c.iNM+c.iOM+c.nNM+c.nOM;
+    const totF=c.iNF+c.iOF+c.nNF+c.nOF;
+    rows.push([g.label,c.iNM,c.iNF,c.iOM,c.iOF,c.nNM,c.nNF,c.nOM,c.nOF,totM,totF]);
+  });
+  rows.push(['Total All Ages',totals.iNM,totals.iNF,totals.iOM,totals.iOF,totals.nNM,totals.nNF,totals.nOM,totals.nOF,grandM,grandF]);
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlFile('Summary_Report_'+month+'.csv','text/csv',csv);
+  showToast('📋 Report CSV exported!','success');
+}
+
+// ── MONTHLY VISIT LIST ──
+function renderVisitList(){
+  populateMonthSelects();
+  const month=document.getElementById('visitlist-month').value;
+  const recs=records
+    .filter(r=>r.visitdate&&r.visitdate.slice(0,7)===month)
+    .sort((a,b)=>a.visitdate.localeCompare(b.visitdate)||a.fullname.localeCompare(b.fullname));
+
+  document.getElementById('visitlist-count').textContent=recs.length+' visit'+(recs.length===1?'':'s');
+
+  let html=`<thead><tr>
+    <th>#</th><th>Visit Date</th><th>Full Name</th><th>CCC</th><th>Folder No.</th>
+    <th>Sex</th><th>Age</th><th>Insurance Status</th><th>New/Old</th>
+  </tr></thead><tbody>`;
+
+  if(!recs.length){
+    html+=`<tr><td colspan="9" style="padding:20px;color:#94a3b8">No visits recorded for ${monthLabel(month)}.</td></tr>`;
+  } else {
+    recs.forEach((r,i)=>{
+      html+=`<tr>
+        <td>${i+1}</td>
+        <td>${r.visitdate}</td>
+        <td class="age-label" style="text-align:left">${r.fullname}</td>
+        <td>${r.ccc}</td>
+        <td>${r.folder}</td>
+        <td>${r.sex}</td>
+        <td>${r.age}</td>
+        <td style="color:${r.insured==='Insured'?'#1a7a4a':'#c0392b'};font-weight:700">${r.insured}</td>
+        <td>${r.status}</td>
+      </tr>`;
+    });
+  }
+  html+=`</tbody>`;
+  document.getElementById('visitlist-table').innerHTML=html;
+  window._lastVisitList={month,recs};
+}
+
+function exportVisitListExcel(){
+  if(!window._lastVisitList||!window._lastVisitList.recs.length){
+    showToast('⚠️ No visits to export for this month','error');return;
+  }
+  const {month,recs}=window._lastVisitList;
+  const inst=document.getElementById('report-institution').value||'';
+  const dist=document.getElementById('report-district').value||'';
+  const reg=document.getElementById('report-region').value||'';
+
+  const aoa=[];
+  aoa.push(['Monthly Visit List']);
+  aoa.push(['Institution', inst]);
+  aoa.push(['District', dist]);
+  aoa.push(['Region', reg]);
+  aoa.push(['Month', monthLabel(month)]);
+  aoa.push([]);
+  aoa.push(['#','Visit Date','Full Name','CCC Code','Folder Number','Sex','Age','Insurance Status','New/Old']);
+  recs.forEach((r,i)=>{
+    aoa.push([i+1,r.visitdate,r.fullname,r.ccc,r.folder,r.sex,r.age,r.insured,r.status]);
+  });
+
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[
+    {wch:4},{wch:12},{wch:26},{wch:14},{wch:14},{wch:8},{wch:10},{wch:16},{wch:10}
+  ];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}}];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Visit List');
+  XLSX.writeFile(wb,'Monthly_Visit_List_'+month+'.xlsx');
+  showToast('📊 Excel file downloaded!','success');
+}
+
+// ── CONSULTING ROOM REGISTER ──
+function ageInYears(age,unit){
+  const n=parseFloat(age)||0;
+  if(unit==='years')return n;
+  if(unit==='months')return n/12;
+  if(unit==='days')return n/365;
+  return n;
+}
+function saveConsultRecord(){
+  const date=document.getElementById('cr-date').value;
+  const name=document.getElementById('cr-name').value.trim();
+  const age=document.getElementById('cr-age').value;
+  const ageunit=document.getElementById('cr-ageunit').value;
+
+  if(!date){showToast('⚠️ Date is required','error');return;}
+  if(!name){showToast('⚠️ Patient name is required','error');return;}
+  if(age===''){showToast('⚠️ Age is required','error');return;}
+  if(!consultFormVals.crsex){showToast('⚠️ Select Sex','error');return;}
+  if(!window._princTags||!window._princTags.length){showToast('⚠️ Add at least one Principal Diagnosis','error');return;}
+
+  consultRecords.push({
+    date,
+    patientnum:document.getElementById('cr-patientnum').value.trim()||'—',
+    name,
+    address:document.getElementById('cr-address').value.trim()||'—',
+    age,ageunit,
+    sex:consultFormVals.crsex,
+    provdiag:document.getElementById('cr-provdiag').value.trim()||'—',
+    referred:consultFormVals.crref||'No',
+    testresult:consultFormVals.crtest||'N/A',
+    princdiag:[...(window._princTags||[])],
+    princstatus:consultFormVals.crprincstatus||'New',
+    adddiag:[...(window._addTags||[])],
+    addstatus:consultFormVals.craddstatus||'',
+    pregnant:consultFormVals.crpreg||'No',
+    nhis:consultFormVals.crnhis||'No',
+  });
+  saveConsult();
+  clearConsultForm();
+  renderConsultRegister();
+  refreshMorbidityIfActive();
+  showToast('✅ Consulting register entry saved!','success');
+}
+
+function clearConsultForm(){
+  ['cr-patientnum','cr-name','cr-address','cr-age','cr-provdiag','princdiag-input','adddiag-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cr-ageunit').value='years';
+  consultFormVals={crsex:'',crref:'',crtest:'',crprincstatus:'',craddstatus:'',crpreg:'',crnhis:''};
+  document.querySelectorAll('#panel-consult .seg-btn').forEach(b=>b.classList.remove('selected'));
+  window._princTags=[];window._addTags=[];
+  renderTagsUI('princ');renderTagsUI('add');
+}
+
+function getConsultMonthsList(){
+  const months=new Set();
+  consultRecords.forEach(r=>{ if(r.date) months.add(r.date.slice(0,7)); });
+  const arr=Array.from(months).sort().reverse();
+  const now=new Date().toISOString().slice(0,7);
+  if(!arr.includes(now))arr.unshift(now);
+  return arr;
+}
+function populateConsultMonthSelects(){
+  const months=getConsultMonthsList();
+  ['consult-month','morb-month'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    const prev=sel.value;
+    sel.innerHTML=months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+    if(months.includes(prev))sel.value=prev;
+  });
+}
+
+function renderConsultRegister(){
+  populateConsultMonthSelects();
+  const month=document.getElementById('consult-month').value;
+  const recs=consultRecords
+    .filter(r=>r.date&&r.date.slice(0,7)===month)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  document.getElementById('consult-count').textContent=recs.length+' entr'+(recs.length===1?'y':'ies');
+
+  let html=`<thead><tr>
+    <th>#</th><th>Date</th><th>Patient No.</th><th>Name of Patient</th><th>Address</th>
+    <th>Age</th><th>Sex</th><th>Provisional Diagnosis</th><th>RDT</th><th>Test Result</th>
+    <th>Principal Diagnosis</th><th>Status (Princ.)</th><th>Additional Diagnosis</th><th>Status (Add.)</th>
+    <th>Pregnant</th><th>NHIS</th>
+  </tr></thead><tbody>`;
+
+  if(!recs.length){
+    html+=`<tr><td colspan="16" style="padding:20px;color:#94a3b8">No consulting register entries for ${monthLabel(month)}.</td></tr>`;
+  } else {
+    recs.forEach((r,i)=>{
+      const realIdx=consultRecords.indexOf(r);
+      const pd=Array.isArray(r.princdiag)?r.princdiag.join(', '):r.princdiag;
+      const ad=Array.isArray(r.adddiag)?(r.adddiag.length?r.adddiag.join(', '):'—'):(r.adddiag||'—');
+      html+=`<tr>
+        <td><button onclick="openEditConsult(${realIdx})" style="background:var(--blue);color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:0.7rem;cursor:pointer">✏️</button> ${i+1}</td>
+        <td>${r.date}</td>
+        <td>${r.patientnum}</td>
+        <td class="age-label" style="text-align:left">${r.name}</td>
+        <td>${r.address}</td>
+        <td>${r.age} ${r.ageunit}</td>
+        <td>${r.sex}</td>
+        <td>${r.provdiag}</td>
+        <td>${r.referred}</td>
+        <td>${r.testresult}</td>
+        <td style="max-width:180px;white-space:normal">${pd}</td>
+        <td>${r.princstatus}</td>
+        <td style="max-width:180px;white-space:normal">${ad}</td>
+        <td>${r.addstatus||'—'}</td>
+        <td>${r.pregnant}</td>
+        <td>${r.nhis}</td>
+      </tr>`;
+    });
+  }
+  html+=`</tbody>`;
+  document.getElementById('consult-table').innerHTML=html;
+  window._lastConsultList={month,recs};
+}
+
+function exportConsultExcel(){
+  if(!window._lastConsultList||!window._lastConsultList.recs.length){
+    showToast('⚠️ No entries to export for this month','error');return;
+  }
+  const {month,recs}=window._lastConsultList;
+  const aoa=[];
+  aoa.push(['CONSULTING ROOM REGISTER']);
+  aoa.push(['Month',monthLabel(month)]);
+  aoa.push([]);
+  aoa.push(['NO.','Date','Patient Number','Name of Patient','Address (Locality)','Age','Age Unit','Sex',
+            'Provisional Diagnosis','RDT','Test Result (+ or -)','Principal Diagnosis',
+            'Status of Principal Diagnosis (New/Old)','Additional Diagnosis','Status of Additional Diagnosis (New/Old)',
+            'Pregnant Patient (Yes/No)','NHIS Patient (Yes/No)']);
+  recs.forEach((r,i)=>{
+    const pd2=Array.isArray(r.princdiag)?r.princdiag.join('; '):r.princdiag;
+      const ad2=Array.isArray(r.adddiag)?r.adddiag.join('; '):r.adddiag;
+      aoa.push([i+1,r.date,r.patientnum,r.name,r.address,r.age,r.ageunit,r.sex,r.provdiag,r.referred,r.testresult,
+              pd2,r.princstatus,ad2,r.addstatus,r.pregnant,r.nhis]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:4},{wch:11},{wch:12},{wch:22},{wch:16},{wch:6},{wch:8},{wch:8},
+                {wch:20},{wch:10},{wch:10},{wch:20},{wch:12},{wch:18},{wch:14},{wch:10},{wch:10}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:16}}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Consulting Register');
+  XLSX.writeFile(wb,'Consulting_Register_'+month+'.xlsx');
+  showToast('📊 Excel file downloaded!','success');
+}
+
+// ── MONTHLY MORBIDITY TALLY SHEET ──
+function tallyConsultEntry(r,counts){
+  // determine age column key
+  const yrs=ageInYears(r.age,r.ageunit);
+  let colKey;
+  if(r.ageunit==='days'&&parseInt(r.age)<=28) colKey='0_28d';
+  else if(yrs<1) colKey='1_11m';
+  else colKey=morbAgeColKey(yrs);
+  if(!colKey) colKey='1_11m';
+
+  const sexPrefix=r.sex==='Male'?'M':'F';
+  const colField=sexPrefix+'_'+colKey;
+  const isPregnant=r.pregnant==='Yes';
+
+  function bump(n){
+    if(!counts[n])counts[n]={};
+    counts[n][colField]=(counts[n][colField]||0)+1;
+  }
+
+  // ── 1. PROVISIONAL DIAGNOSIS: only tally if it is malaria ──
+  const prov=(r.provdiag||'').trim().toLowerCase();
+  const provIsMalaria=prov&&(prov.includes('malaria')||prov==='rdt');
+  if(provIsMalaria){
+    // provisional malaria → row 9 (Uncomplicated Malaria Suspected)
+    // unless pregnancy → row 13
+    if(isPregnant) bump(13); else bump(9);
+  }
+  // Non-malaria provisional diagnosis: do NOT auto-update morbidity at all
+
+  // ── 2. RDT result ──
+  const rdt=(r.referred||'').trim();
+  if(rdt==='Positive'){
+    // RDT positive → row 11 (Uncomplicated Malaria Tested Positive)
+    // unless pregnancy → row 15
+    if(isPregnant) bump(15); else bump(11);
+  }
+  // RDT Negative → does not auto-update any row from RDT alone
+
+  // ── 3. PRINCIPAL DIAGNOSES ──
+  const princList=Array.isArray(r.princdiag)?r.princdiag:(r.princdiag?[r.princdiag]:[]);
+  princList.forEach(diagText=>{
+    if(!diagText||!String(diagText).trim())return;
+    const t=String(diagText).trim();
+    let lineNum=matchDisease(t, r.princstatus||'New');
+    if(lineNum==='REFERRAL'){ /* counted only in row 97 */ }
+    else if(lineNum==='REFERRAL'){ /* counted only in row 97 */ }
+    else if(lineNum==='REATTEND'){
+      counts._reattend=(counts._reattend||0)+1;
+    } else {
+      if(lineNum===null) lineNum=95; // ALL unmatched → All other cases
+      bump(lineNum);
+    }
+  });
+
+  // ── 4. ADDITIONAL DIAGNOSES ──
+  const addList=Array.isArray(r.adddiag)?r.adddiag:(r.adddiag?[r.adddiag]:[]);
+  addList.forEach(diagText=>{
+    if(!diagText||!String(diagText).trim())return;
+    const t=String(diagText).trim();
+    let lineNum=matchDisease(t, r.addstatus||'New');
+    if(lineNum==='REATTEND'){
+      counts._reattend=(counts._reattend||0)+1;
+    } else {
+      if(lineNum===null) lineNum=95; // ALL unmatched → All other cases
+      bump(lineNum);
+    }
+  });
+}
+
+function renderMorbidity(){
+  populateConsultMonthSelects();
+  applyMeta();
+  const month=document.getElementById('morb-month').value;
+  const recs=consultRecords.filter(r=>r.date&&r.date.slice(0,7)===month);
+
+  const counts={_unmatched:[],_reattend:0};
+  recs.forEach(r=>tallyConsultEntry(r,counts));
+
+  const NCOLS=MORB_AGE_COLS.length;
+  const TOTAL_COLS=NCOLS*2+3; // disease label + male ages + total M + female ages + total F + grand total
+  function morbSubHeader(){
+    let h=`<tr>
+      <th style="background:var(--navy);color:#fff;font-size:0.62rem;min-width:28px">NO.</th>
+      <th style="text-align:left;padding-left:6px;background:var(--navy);color:#fff;font-size:0.65rem;min-width:240px">DISEASE (NEW CASES ONLY)</th>`;
+    MORB_AGE_COLS.forEach(c=>h+=`<th class="grp-insured" style="white-space:pre-line;font-size:0.6rem;min-width:42px">${c.label}</th>`);
+    h+=`<th class="grp-insured" style="font-weight:800;font-size:0.65rem;min-width:46px">TOT M</th>`;
+    MORB_AGE_COLS.forEach(c=>h+=`<th class="grp-noninsured" style="white-space:pre-line;font-size:0.6rem;min-width:42px">${c.label}</th>`);
+    h+=`<th class="grp-noninsured" style="font-weight:800;font-size:0.65rem;min-width:46px">TOT F</th>`;
+    h+=`<th class="grp-total" style="font-weight:800;font-size:0.65rem;min-width:50px">GRAND TOTAL</th>`;
+    h+=`</tr>`;
+    return h;
+  }
+  function morbSexHeader(){
+    return `<tr>
+      <th colspan="2" style="background:var(--navy);color:#fff;text-align:left;padding-left:6px;font-size:0.7rem;font-weight:700">SEX →</th>
+      <th colspan="${NCOLS+1}" class="grp-insured" style="font-weight:800;font-size:0.72rem">MALE</th>
+      <th colspan="${NCOLS+1}" class="grp-noninsured" style="font-weight:800;font-size:0.72rem">FEMALE</th>
+      <th class="grp-total"></th>
+    </tr>`;
+  }
+  // build header
+  let html=`<thead>${morbSexHeader()}${morbSubHeader()}</thead><tbody>`;
+
+  let sectionTotals={}; // per column grand totals
+  const allCols=MORB_AGE_COLS.map(c=>c.key);
+  const colTotal=()=>{const o={};['M','F'].forEach(s=>allCols.forEach(c=>o[s+'_'+c]=0));return o;};
+  let grandTotals=colTotal();
+  let grandAll=0;
+
+  let lastSection=null;
+  MORBIDITY_DISEASES.forEach(d=>{
+    if(d.section!==lastSection){
+      html+=`<tr class="section-row"><td colspan="${TOTAL_COLS}">${d.section}</td></tr>`;
+      html+=morbSexHeader();
+      html+=morbSubHeader();
+      lastSection=d.section;
+    }
+    const row=counts[d.n]||{};
+    let rowM=0,rowF=0;
+    html+=`<tr><td style="font-size:0.68rem;color:var(--grey3);text-align:center">${d.n}</td>`;
+    html+=`<td class="age-label" style="text-align:left;font-weight:600;font-size:0.7rem">${d.label}</td>`;
+    MORB_AGE_COLS.forEach(c=>{
+      const v=row['M_'+c.key]||0;
+      rowM+=v; grandTotals['M_'+c.key]+=v;
+      html+=`<td>${cell(v)}</td>`;
+    });
+    html+=`<td style="font-weight:800;background:var(--sky)">${rowM}</td>`;
+    MORB_AGE_COLS.forEach(c=>{
+      const v=row['F_'+c.key]||0;
+      rowF+=v; grandTotals['F_'+c.key]+=v;
+      html+=`<td>${cell(v)}</td>`;
+    });
+    html+=`<td style="font-weight:800;background:var(--sky)">${rowF}</td>`;
+    const rowTotal=rowM+rowF;
+    grandAll+=rowTotal;
+    html+=`<td style="font-weight:800;background:var(--amber-l)">${rowTotal}</td></tr>`;
+  });
+
+  // TOTALS row
+  let totM=0,totF=0;
+  html+=morbSexHeader()+morbSubHeader();
+  html+=`<tr class="total-row"><td></td><td class="age-label" style="text-align:left;font-weight:800">TOTALS</td>`;
+  MORB_AGE_COLS.forEach(c=>{const v=grandTotals['M_'+c.key];totM+=v;html+=`<td>${v}</td>`;});
+  html+=`<td style="font-weight:800">${totM}</td>`;
+  MORB_AGE_COLS.forEach(c=>{const v=grandTotals['F_'+c.key];totF+=v;html+=`<td>${v}</td>`;});
+  html+=`<td style="font-weight:800">${totF}</td><td style="font-weight:800;background:var(--amber-l)">${totM+totF}</td></tr>`;
+
+  // Re-attendances: Old case status + known HTN/DM redirected
+  const reAttendOldCase=recs.filter(r=>r.princstatus==='Old'||r.addstatus==='Old').length;
+  const reAttendHtnDm=counts._reattend||0;
+  const reAttendances=reAttendOldCase+reAttendHtnDm;
+  const referrals=recs.filter(r=>r.referred==='Yes'||r.referred==='Positive'||r.referred==='Negative').length;
+  html+=`<tr class="section-row"><td colspan="${TOTAL_COLS}">RE-ATTENDANCE AND REFERRALS</td></tr>`;
+  html+=morbSexHeader()+morbSubHeader();
+  // count re-attendances by sex/age
+  const raM={},raF={},refM={},refF={};
+  MORB_AGE_COLS.forEach(c=>{raM[c.key]=0;raF[c.key]=0;refM[c.key]=0;refF[c.key]=0;});
+  let raTotM=0,raTotF=0,refTotM=0,refTotF=0;
+  recs.forEach(r=>{
+    const yrs2=ageInYears(r.age,r.ageunit);
+    let ck2;
+    if(r.ageunit==='days'&&r.age<=28)ck2='0_28d';
+    else if(yrs2<1)ck2='1_11m';
+    else ck2=morbAgeColKey(yrs2);
+    if(!ck2)ck2='1_11m';
+    const isMale=r.sex==='Male';
+    // re-attendance: old case OR known HTN/DM counted in _reattend
+    const princList2=Array.isArray(r.princdiag)?r.princdiag:(r.princdiag?[r.princdiag]:[]);
+    const addList2=Array.isArray(r.adddiag)?r.adddiag:(r.adddiag?[r.adddiag]:[]);
+    const allDiags=[...princList2,...addList2];
+    let isReattend=r.princstatus==='Old'||r.addstatus==='Old';
+    if(!isReattend){
+      isReattend=allDiags.some(d=>{const m=matchDisease(d,'Old');return m==='REATTEND';});
+    }
+    if(isReattend){
+      if(isMale){raM[ck2]=(raM[ck2]||0)+1;raTotM++;}
+      else{raF[ck2]=(raF[ck2]||0)+1;raTotF++;}
+    }
+    if(r.referred==='Yes'||r.referred==='Positive'||r.referred==='Negative'){
+      if(isMale){refM[ck2]=(refM[ck2]||0)+1;refTotM++;}
+      else{refF[ck2]=(refF[ck2]||0)+1;refTotF++;}
+    }
+  });
+  html+=`<tr><td style="font-size:0.68rem;color:var(--grey3)">96</td><td class="age-label" style="text-align:left">Re-Attendances</td>`;
+  MORB_AGE_COLS.forEach(c=>html+=`<td>${cell(raM[c.key]||0)}</td>`);
+  html+=`<td style="font-weight:800">${raTotM}</td>`;
+  MORB_AGE_COLS.forEach(c=>html+=`<td>${cell(raF[c.key]||0)}</td>`);
+  html+=`<td style="font-weight:800">${raTotF}</td><td style="font-weight:800;background:var(--amber-l)">${raTotM+raTotF}</td></tr>`;
+  html+=`<tr><td style="font-size:0.68rem;color:var(--grey3)">97</td><td class="age-label" style="text-align:left">Referrals</td>`;
+  MORB_AGE_COLS.forEach(c=>html+=`<td>${cell(refM[c.key]||0)}</td>`);
+  html+=`<td style="font-weight:800">${refTotM}</td>`;
+  MORB_AGE_COLS.forEach(c=>html+=`<td>${cell(refF[c.key]||0)}</td>`);
+  html+=`<td style="font-weight:800">${refTotF}</td><td style="font-weight:800;background:var(--amber-l)">${refTotM+refTotF}</td></tr>`;
+
+  html+=`</tbody>`;
+  document.getElementById('morbidity-table').innerHTML=html;
+
+  const unmatchedDiv=document.getElementById('morb-unmatched');
+  unmatchedDiv.innerHTML=`<p style="font-size:0.85rem;color:var(--green)">✅ Morbidity tallied from consulting records.<br>
+    <small style="color:var(--grey3)">Unrecognised diagnoses are automatically counted under row 95 (All other cases). 
+    Provisional diagnosis only updates malaria rows. RDT Positive updates Uncomplicated Malaria Tested Positive.</small></p>`;
+  window._lastMorbidity={month,counts,grandAll,grandTotals,totM,totF,reAttendances,referrals};
+}
+
+function exportMorbidityExcel(){
+  if(!window._lastMorbidity){showToast('⚠️ Generate the report first','error');return;}
+  const {month,counts,grandTotals,totM,totF,reAttendances,referrals}=window._lastMorbidity;
+  const facility=document.getElementById('morb-facility').value||'';
+  const region=document.getElementById('morb-region').value||document.getElementById('report-region').value||'';
+  const district=document.getElementById('morb-district').value||document.getElementById('report-district').value||'';
+  const location=document.getElementById('morb-location').value||'';
+
+  const aoa=[];
+  aoa.push(['MONTHLY OUTPATIENTS MORBIDITY RETURNS TALLY SHEET']);
+  aoa.push(['Name of Facility',facility,'','Location',location]);
+  aoa.push(['Region',region,'','District',district]);
+  aoa.push(['Month',monthLabel(month)]);
+  aoa.push([]);
+
+  const ageLabels=MORB_AGE_COLS.map(c=>c.label.replace('\n',' '));
+  const header=['DISEASE (NEW CASES ONLY)',...ageLabels,'TOTAL MALE',...ageLabels,'TOTAL FEMALE','GRAND TOTAL'];
+  aoa.push(header);
+
+  let lastSection=null;
+  MORBIDITY_DISEASES.forEach(d=>{
+    if(d.section!==lastSection){
+      aoa.push([d.section]);
+      lastSection=d.section;
+    }
+    const row=counts[d.n]||{};
+    let rowM=0,rowF=0;
+    const mVals=MORB_AGE_COLS.map(c=>{const v=row['M_'+c.key]||0;rowM+=v;return v;});
+    const fVals=MORB_AGE_COLS.map(c=>{const v=row['F_'+c.key]||0;rowF+=v;return v;});
+    aoa.push([`${d.n}. ${d.label}`,...mVals,rowM,...fVals,rowF,rowM+rowF]);
+  });
+
+  const mTotals=MORB_AGE_COLS.map(c=>grandTotals['M_'+c.key]);
+  const fTotals=MORB_AGE_COLS.map(c=>grandTotals['F_'+c.key]);
+  aoa.push(['TOTALS',...mTotals,totM,...fTotals,totF,totM+totF]);
+  aoa.push([]);
+  aoa.push(['RE-ATTENDANCE AND REFERRALS']);
+  aoa.push(['96. Re-Attendances',reAttendances]);
+  aoa.push(['97. Referrals',referrals]);
+
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:42},...Array(13).fill({wch:9})];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Morbidity Tally');
+  XLSX.writeFile(wb,'Morbidity_Tally_'+month+'.xlsx');
+  showToast('📊 Excel file downloaded!','success');
+}
+function exportCSV(){
+  if(!records.length){showToast('⚠️ No records to export','error');return;}
+  const h=["CCC","Folder Number","Full Name","Sex","Age","DOB","Visit Date","Insurance No.","HIN","Insurance Status","Patient Status"];
+  const rows=records.map(r=>[r.ccc,r.folder,r.fullname,r.sex,r.age,r.dob,r.visitdate,r.insurance,r.hin,r.insured,r.status].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  dlFile('Patient_Records_'+td()+'.csv','text/csv',[h.join(','),...rows].join('\n'));
+  showToast('📄 CSV downloaded!','success');
+}
+function exportJSON(){
+  if(!records.length){showToast('⚠️ No records to export','error');return;}
+  dlFile('Patient_Backup_'+td()+'.json','application/json',JSON.stringify(records,null,2));
+  showToast('📦 JSON backup saved!','success');
+}
+function restoreJSON(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(!Array.isArray(d))throw 0;records=d;save();showToast('✅ '+d.length+' records restored!','success');renderStorageStats();}catch{showToast('❌ Invalid file','error');}};
+  reader.readAsText(file);input.value='';
+}
+
+
+// ── DIAGNOSIS TAG INPUT SYSTEM ──
+// ALL diagnosis strings from disease list + extra aliases
+const ALL_DIAG_OPTIONS = [
+  // ── Disease labels from tally sheet ──
+  ...MORBIDITY_DISEASES.filter(d=>d.n!==95).map(d=>d.label),
+  // ── Diarrhoea group ──
+  "Gastroenteritis","Enteritis","Gastritis","Enteric Fever","Gastroenteritis (Acute)",
+  // ── URTI group ──
+  "Sinusitis","Common Cold","Rhinitis","Nasopharyngitis","Pharyngitis",
+  "Laryngitis","Tonsillitis","Coryza","Catarrh","Acute Tonsillitis","Acute Pharyngitis",
+  // ── Hypertension (new vs known) ──
+  "Newly Diagnosed Hypertension","Known Hypertension","Hypertension","High Blood Pressure","HTN",
+  "Hypertension - New","Hypertension - Old","Essential Hypertension",
+  // ── Diabetes (new vs known) ──
+  "Newly Diagnosed Diabetes Mellitus","Known Diabetes Mellitus","Diabetes Mellitus","Diabetes","DM",
+  "Type 2 Diabetes","Type 1 Diabetes","Diabetes - New","Diabetes - Old",
+  // ── Rheumatism / Joint pain group ──
+  "MSP","Musculoskeletal Pain","Peripheral Neuropathy","PN","Polyneuropathy",
+  "Back Pain","Neck Pain","Low Back Pain","Lumbago","Gout","Myalgia",
+  "Osteoarthritis","Fibromyalgia","Rheumatoid Arthritis","Joint Pain","Arthralgia",
+  // ── Skin diseases group ──
+  "Seborrheic Dermatitis","Contact Dermatitis","Infective Dermatitis","Atopic Dermatitis",
+  "Tinea","Ringworm","Impetigo","Scabies","Urticaria","Psoriasis",
+  "Cellulitis","Folliculitis","Boil","Acne","Rash","Skin Rash","Eczema",
+  "Skin Infection","Furuncle","Abscess",
+  // ── Malaria ──
+  "Suspected Malaria","Malaria Suspected","Malaria Suspected Tested",
+  "Uncomplicated Malaria","Confirmed Malaria","Malaria Positive","Malaria +",
+  "Malaria Tested Positive","Malaria Not Tested","Treated as Malaria",
+  "Malaria in Pregnancy","Malaria in Pregnancy Suspected","Malaria PLC",
+  // ── Respiratory ──
+  "Pneumonia","COPD","Asthma","Bronchitis","Bronchial Asthma","URTI","URI",
+  // ── Injuries ──
+  "Road Traffic Accident","RTA","Transport Injury","Home Injury","Occupational Injury",
+  "Burns","Poisoning","Dog Bite","Human Bite","Snake Bite",
+  // ── Mental health ──
+  "Anxiety","Depression","Epilepsy","Seizure","Schizophrenia","Psychosis",
+  "Substance Abuse","Autism","ADHD","PTSD","Insomnia",
+  // ── Infections ──
+  "UTI","Urinary Tract Infection","Conjunctivitis","Eye Infection",
+  "Otitis Media","Ear Infection","Typhoid","Typhoid Fever",
+  "Sepsis","Septicaemia","HIV","AIDS","Hepatitis","Viral Hepatitis",
+  "Worms","Intestinal Worms","Helminths","Chicken Pox","Varicella","Measles","Mumps",
+  // ── Non-communicable ──
+  "Anaemia","Anemia","Sickle Cell Disease","Malnutrition","Obesity",
+  "Cardiac Disease","Heart Failure","Heart Disease","Stroke","CVA",
+  "Breast Cancer","Cervical Cancer","Prostate Cancer","Liver Disease","Cirrhosis",
+  "Kidney Disease","Renal Disease","Ulcer","Peptic Ulcer","Gastric Ulcer",
+  // ── Obstetric ──
+  "Gynaecological Conditions","Pregnancy Related Complications","Anaemia in Pregnancy",
+  "Antenatal","Vaginal Discharge","Urethral Discharge","Genital Ulcer",
+  // ── Other ──
+  "PUO","Pyrexia of Unknown Origin","Fever of Unknown Origin",
+  "Sexual Abuse","Domestic Violence","Brought in Dead","BID",
+  "All other cases","Re-Attendance","Referral",
+].filter((v,i,a)=>a.indexOf(v)===i); // deduplicate
+
+window._princTags=[];
+window._addTags=[];
+window._editPrincTags=[];
+window._editAddTags=[];
+
+function getTagArray(prefix){
+  if(prefix==='princ')return window._princTags;
+  if(prefix==='add')return window._addTags;
+  if(prefix==='edit-princ')return window._editPrincTags;
+  if(prefix==='edit-add')return window._editAddTags;
+  return [];
+}
+function setTagArray(prefix,arr){
+  if(prefix==='princ')window._princTags=arr;
+  else if(prefix==='add')window._addTags=arr;
+  else if(prefix==='edit-princ')window._editPrincTags=arr;
+  else if(prefix==='edit-add')window._editAddTags=arr;
+}
+
+function renderTagsUI(prefix){
+  const arr=getTagArray(prefix);
+  const wrapId=prefix.replace('edit-','edit-')+'diag-tags';
+  const el=document.getElementById(wrapId)||document.getElementById(prefix+'diag-tags');
+  if(!el)return;
+  el.innerHTML=arr.map((t,i)=>
+    `<span class="diag-tag">${t}<span class="rm" onclick="removeTag('${prefix}',${i})">×</span></span>`
+  ).join('');
+}
+function addTag(prefix,val){
+  val=val.trim();
+  if(!val)return;
+  const arr=getTagArray(prefix);
+  if(!arr.includes(val))arr.push(val);
+  setTagArray(prefix,arr);
+  renderTagsUI(prefix);
+  const inputId=prefix==='princ'?'princdiag-input':prefix==='add'?'adddiag-input':'edit-'+prefix.replace('edit-','')+'-input';
+  const inp=document.getElementById(inputId)||document.getElementById(prefix+'diag-input')||document.getElementById('edit-'+prefix.split('-')[1]+'diag-input');
+  if(inp)inp.value='';
+  hideDiagDropdown(prefix);
+}
+function removeTag(prefix,i){
+  const arr=getTagArray(prefix);
+  arr.splice(i,1);
+  setTagArray(prefix,arr);
+  renderTagsUI(prefix);
+}
+function showDiagDropdown(prefix,query){
+  const q=query.toLowerCase().trim();
+  const ddId=prefix+'diag-dropdown';
+  const dd=document.getElementById(ddId);
+  if(!dd)return;
+  if(!q){dd.style.display='none';return;}
+  const matches=ALL_DIAG_OPTIONS.filter(o=>o.toLowerCase().includes(q)).slice(0,10);
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(m=>`<div onclick="addTag('${prefix}','${m.replace(/'/g,"\'")}')"> ${m}</div>`).join('');
+  dd.style.display='block';
+}
+function hideDiagDropdown(prefix){
+  const dd=document.getElementById(prefix+'diag-dropdown');
+  if(dd)dd.style.display='none';
+}
+function diagKeydown(e,prefix){
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    const inp=e.target;
+    if(inp.value.trim())addTag(prefix,inp.value);
+  }
+  if(e.key==='Escape')hideDiagDropdown(prefix);
+}
+// Close dropdowns on outside click
+document.addEventListener('click',e=>{
+  ['princ','add','edit-princ','edit-add'].forEach(p=>{
+    const dd=document.getElementById(p+'diag-dropdown');
+    const wrap=document.getElementById(p.replace('edit-','')==='princ'?'princdiag-wrap':p.replace('edit-','')+'diag-wrap')||document.getElementById('edit-'+p.split('-')[1]+'diag-wrap');
+    if(dd&&wrap&&!wrap.contains(e.target))dd.style.display='none';
+  });
+});
+
+// ── CONSULT EDIT MODAL ──
+function openEditConsult(idx){
+  const r=consultRecords[idx];
+  document.getElementById('edit-idx').value=idx;
+  document.getElementById('edit-date').value=r.date;
+  document.getElementById('edit-patno').value=r.patientnum==='—'?'':r.patientnum;
+  document.getElementById('edit-name').value=r.name;
+  document.getElementById('edit-address').value=r.address==='—'?'':r.address;
+  document.getElementById('edit-age').value=r.age;
+  document.getElementById('edit-ageunit').value=r.ageunit||'years';
+  document.getElementById('edit-sex').value=r.sex;
+  document.getElementById('edit-provdiag').value=r.provdiag==='—'?'':r.provdiag;
+  document.getElementById('edit-referred').value=r.referred||'No';
+  document.getElementById('edit-testresult').value=r.testresult||'N/A';
+  document.getElementById('edit-princstatus').value=r.princstatus||'New';
+  document.getElementById('edit-addstatus').value=r.addstatus||'';
+  document.getElementById('edit-pregnant').value=r.pregnant||'No';
+  document.getElementById('edit-nhis').value=r.nhis||'No';
+  // load tag arrays
+  window._editPrincTags=Array.isArray(r.princdiag)?[...r.princdiag]:(r.princdiag?[r.princdiag]:[]);
+  window._editAddTags=Array.isArray(r.adddiag)?[...r.adddiag]:(r.adddiag?[r.adddiag]:[]);
+  renderTagsUI('edit-princ');renderTagsUI('edit-add');
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEditModal(e){
+  if(!e||e.target===document.getElementById('edit-modal'))
+    document.getElementById('edit-modal').classList.remove('open');
+}
+function saveConsultEdit(){
+  const idx=parseInt(document.getElementById('edit-idx').value);
+  const name=document.getElementById('edit-name').value.trim();
+  const date=document.getElementById('edit-date').value;
+  if(!date){showToast('⚠️ Date is required','error');return;}
+  if(!name){showToast('⚠️ Name is required','error');return;}
+  if(!window._editPrincTags.length){showToast('⚠️ Add at least one Principal Diagnosis','error');return;}
+  consultRecords[idx]={
+    date,
+    patientnum:document.getElementById('edit-patno').value.trim()||'—',
+    name,
+    address:document.getElementById('edit-address').value.trim()||'—',
+    age:document.getElementById('edit-age').value,
+    ageunit:document.getElementById('edit-ageunit').value,
+    sex:document.getElementById('edit-sex').value,
+    provdiag:document.getElementById('edit-provdiag').value.trim()||'—',
+    referred:document.getElementById('edit-referred').value,
+    testresult:document.getElementById('edit-testresult').value,
+    princdiag:[...window._editPrincTags],
+    princstatus:document.getElementById('edit-princstatus').value,
+    adddiag:[...window._editAddTags],
+    addstatus:document.getElementById('edit-addstatus').value,
+    pregnant:document.getElementById('edit-pregnant').value,
+    nhis:document.getElementById('edit-nhis').value,
+  };
+  saveConsult();
+  document.getElementById('edit-modal').classList.remove('open');
+  renderConsultRegister();
+  refreshMorbidityIfActive();
+  showToast('✅ Record updated!','success');
+}
+function deleteConsultFromEdit(){
+  const idx=parseInt(document.getElementById('edit-idx').value);
+  if(!confirm('Delete this record permanently?'))return;
+  consultRecords.splice(idx,1);
+  saveConsult();
+  document.getElementById('edit-modal').classList.remove('open');
+  renderConsultRegister();
+  refreshMorbidityIfActive();
+  showToast('🗑 Record deleted','error');
+}
+
+// ── STORAGE STATS ──
+function renderStorageStats(){
+  document.getElementById('storage-records').textContent=records.length;
+  const bytes=new Blob([JSON.stringify(records)]).size;
+  let sizeStr;
+  if(bytes<1024) sizeStr=bytes+' B';
+  else if(bytes<1024*1024) sizeStr=(bytes/1024).toFixed(1)+' KB';
+  else sizeStr=(bytes/(1024*1024)).toFixed(2)+' MB';
+  document.getElementById('storage-size').textContent=sizeStr;
+}
+
+// ── ARCHIVE & CLEAR OLD RECORDS ──
+function archiveOldRecords(){
+  const cutoff=document.getElementById('archive-date').value;
+  if(!cutoff){showToast('⚠️ Select a cutoff date first','error');return;}
+
+  const toArchive=records.filter(r=>r.visitdate && r.visitdate<=cutoff);
+  const toKeep=records.filter(r=>!(r.visitdate && r.visitdate<=cutoff));
+
+  if(!toArchive.length){showToast('⚠️ No records found on or before that date','error');return;}
+
+  if(!confirm(`This will export ${toArchive.length} record(s) on or before ${cutoff} as a backup, then permanently delete them from this device. ${toKeep.length} record(s) will remain. Continue?`)) return;
+
+  dlFile('Archive_'+cutoff+'.json','application/json',JSON.stringify(toArchive,null,2));
+
+  records=toKeep;
+  save();
+  renderStorageStats();
+  showToast(`📦 Archived & removed ${toArchive.length} record(s)`,'success');
+}
+
+function dlFile(name,type,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+function td(){return new Date().toISOString().slice(0,10);}
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── INIT ──
+document.getElementById('visitdate').value=new Date().toISOString().slice(0,10);
+document.getElementById('cr-date').value=new Date().toISOString().slice(0,10);
+populateMonthSelects();
+populateConsultMonthSelects();
+</script>
+</body>
+</html>
