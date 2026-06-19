@@ -4,7 +4,42 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Patient Records & Facility Report System</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* ── LOGIN SCREEN ── */
+  #login-screen{
+    position:fixed;inset:0;background:linear-gradient(135deg,#1a3a5c 0%,#2563a8 100%);
+    z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  #login-screen.hidden{display:none;}
+  .login-box{background:#fff;border-radius:20px;padding:32px 24px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .login-logo{text-align:center;font-size:2.5rem;margin-bottom:8px;}
+  .login-title{text-align:center;font-size:1.2rem;font-weight:800;color:#1a3a5c;margin-bottom:4px;}
+  .login-sub{text-align:center;font-size:0.8rem;color:#94a3b8;margin-bottom:24px;}
+  .login-field{margin-bottom:14px;}
+  .login-field label{display:block;font-size:0.78rem;font-weight:600;color:#1a3a5c;margin-bottom:5px;}
+  .login-field input{width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;background:#f4f7fb;}
+  .login-field input:focus{outline:none;border-color:#2563a8;background:#fff;}
+  .login-btn{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,#2563a8,#1a3a5c);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-top:4px;}
+  .login-btn:disabled{opacity:0.6;cursor:not-allowed;}
+  .login-toggle{text-align:center;margin-top:14px;font-size:0.82rem;color:#64748b;}
+  .login-toggle span{color:#2563a8;font-weight:700;cursor:pointer;}
+  .login-error{background:#fdecea;color:#c0392b;padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:12px;display:none;}
+  .login-config{text-align:center;margin-top:16px;}
+  .login-config span{font-size:0.78rem;color:#94a3b8;cursor:pointer;}
+  .login-config span:hover{color:#2563a8;}
+  .config-box{background:#f4f7fb;border-radius:10px;padding:14px;margin-top:12px;display:none;}
+  .config-box label{font-size:0.75rem;font-weight:600;color:#1a3a5c;display:block;margin-bottom:4px;margin-top:10px;}
+  .config-box input{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.8rem;}
+  .config-save-btn{width:100%;padding:10px;border:none;border-radius:8px;background:#1a7a4a;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;margin-top:10px;}
+  /* ── USER BAR ── */
+  .user-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.12);padding:6px 16px;font-size:0.75rem;color:rgba(255,255,255,0.85);}
+  .user-bar strong{color:#fff;}
+  .logout-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;font-weight:600;}
+  .cloud-status{font-size:0.68rem;padding:2px 8px;border-radius:10px;font-weight:600;}
+  .cloud-status.online{background:#1a7a4a;color:#fff;}
+  .cloud-status.offline{background:#f59e0b;color:#fff;}
+  .cloud-status.syncing{background:#2563a8;color:#fff;}
   :root {
     --navy:#1a3a5c;--blue:#2563a8;--sky:#e8f2fb;--green:#1a7a4a;--green-l:#e6f5ed;
     --red:#c0392b;--red-l:#fdecea;--amber:#f59e0b;--amber-l:#fef9e7;
@@ -154,7 +189,61 @@
 </style>
 </head>
 <body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🏥</div>
+    <div class="login-title">Patient Records System</div>
+    <div class="login-sub">Health Facility Management</div>
+
+    <div class="login-error" id="login-error"></div>
+
+    <div id="login-form">
+      <div class="login-field"><label>Username</label><input type="text" id="l-username" placeholder="Enter username" autocomplete="username"/></div>
+      <div class="login-field"><label>Password</label><input type="password" id="l-password" placeholder="Enter password" autocomplete="current-password"/></div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">🔐 Login</button>
+      <div class="login-toggle">No account? <span onclick="showRegister()">Register here</span></div>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <div class="login-field"><label>Full Name</label><input type="text" id="r-fullname" placeholder="Your full name"/></div>
+      <div class="login-field"><label>Username</label><input type="text" id="r-username" placeholder="Choose a username"/></div>
+      <div class="login-field"><label>Password</label><input type="password" id="r-password" placeholder="Choose a password (min 6 chars)"/></div>
+      <div class="login-field"><label>Facility Name</label><input type="text" id="r-facility" placeholder="e.g. Accra Central Hospital"/></div>
+      <div class="login-field"><label>Role</label>
+        <select id="r-role" style="width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.95rem;background:#f4f7fb">
+          <option value="staff">Staff</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="login-btn" id="register-btn" onclick="doRegister()">✅ Create Account</button>
+      <div class="login-toggle">Already have account? <span onclick="showLogin()">Login here</span></div>
+    </div>
+
+    <div class="login-config">
+      <span onclick="toggleConfig()">⚙️ Configure Database Connection</span>
+      <div class="config-box" id="config-box">
+        <p style="font-size:0.75rem;color:#64748b;margin-bottom:8px">Enter your Supabase credentials. See the Setup Guide for instructions.</p>
+        <label>Supabase Project URL</label>
+        <input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co"/>
+        <label>Supabase Anon Key</label>
+        <input type="text" id="cfg-key" placeholder="eyJhbGciOi..."/>
+        <button class="config-save-btn" onclick="saveConfig()">💾 Save & Connect</button>
+        <p style="font-size:0.72rem;color:#94a3b8;margin-top:8px;text-align:center">Without configuration, app runs in offline mode (local storage only)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <header>
+  <div class="user-bar" id="user-bar" style="display:none">
+    <div><strong id="ub-name">—</strong> · <span id="ub-facility" style="opacity:0.8">—</span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="cloud-status offline" id="cloud-status">⚡ Offline</span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
   <h1>🏥 Patient Records & Facility Report</h1>
   <p>CCC · Demographics · Insurance · Monthly facility statistics</p>
   <div class="tabs">
@@ -183,6 +272,7 @@
       </div>
     </div>
     <div class="field"><label>Full Name <span>*</span></label><input type="text" id="fullname" placeholder="Last, First Middle"/></div>
+    <div class="field"><label>Address (Locality)</label><input type="text" id="address" placeholder="Town / Locality / Community"/></div>
     <div class="field-row">
       <div class="field"><label>Date of Birth <span>*</span></label><input type="date" id="dob" onchange="calcAge()"/></div>
       <div class="field"><label>Age (auto)</label><input type="text" id="age" class="auto-fill" readonly placeholder="—"/></div>
@@ -471,6 +561,80 @@
     <p class="export-note">A backup JSON of the archived records downloads automatically before anything is deleted. This cannot be undone.</p>
   </div>
   <div class="card">
+    <div class="card-title">☁️ Cloud Sync Setup Guide</div>
+    <p style="font-size:0.82rem;color:var(--grey3);margin-bottom:14px;line-height:1.5">Follow these steps once to enable cloud sync and user login across all devices.</p>
+
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>Create a free Supabase account</strong><br>Go to <strong>supabase.com</strong> → click "Start for free" → sign up with Google or email.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>Create a new project</strong><br>Click "New Project" → choose a name (e.g. <em>patient-records</em>) → set a strong database password → click "Create project". Wait ~2 minutes.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>Get your API keys</strong><br>In your project, go to <strong>Settings → API</strong>. Copy the <em>Project URL</em> and the <em>anon/public key</em>.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-text"><strong>Create the database tables</strong><br>Go to <strong>SQL Editor</strong> → click "New query" → paste the SQL below → click "Run".</div>
+    </div>
+
+    <div style="background:var(--navy);color:#7dd3fc;font-family:monospace;font-size:0.72rem;padding:12px;border-radius:8px;white-space:pre-wrap;overflow-x:auto;margin-bottom:8px" id="setup-sql">-- Run this in Supabase SQL Editor
+CREATE TABLE IF NOT EXISTS facility_users (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  username text UNIQUE NOT NULL,
+  password_hash text NOT NULL,
+  full_name text,
+  role text DEFAULT 'staff',
+  facility_name text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS patient_records (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  facility_name text,
+  user_id uuid,
+  ccc text, folder text, fullname text, address text,
+  sex text, age text, dob text, visitdate text,
+  insurance text, hin text, insured text, status text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS consult_records (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  facility_name text,
+  user_id uuid,
+  date text, patno text, name text, address text,
+  age text, ageunit text, sex text, provdiag text,
+  referred text, testresult text, princdiag jsonb,
+  princstatus text, adddiag jsonb, addstatus text,
+  pregnant text, nhis text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Allow public access (Row Level Security off for simplicity)
+ALTER TABLE facility_users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE patient_records DISABLE ROW LEVEL SECURITY;
+ALTER TABLE consult_records DISABLE ROW LEVEL SECURITY;</div>
+    <button class="copy-btn" onclick="copySQLSetup()" style="margin-bottom:14px">📋 Copy SQL</button>
+
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-text"><strong>Enter your keys in the app</strong><br>On the login screen tap <em>"Configure Database Connection"</em> → paste your Project URL and anon key → tap Save.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">6</div>
+      <div class="step-text"><strong>Register your account</strong><br>Tap "Register here" on the login screen → fill in your name, username, password and facility name → tap Create Account.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">✅</div>
+      <div class="step-text"><strong>Done!</strong> All records now sync to the cloud automatically. Any device with the app and your login credentials can access the same data.</div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">💡 Android Tips</div>
     <div class="step-item"><div class="step-num">📌</div><div class="step-text"><strong>Add to Home Screen:</strong> Open in Chrome → 3-dot menu → "Add to Home Screen".</div></div>
     <div class="step-item"><div class="step-num">☁️</div><div class="step-text"><strong>Cloud backup:</strong> Upload this HTML file to Google Drive, open it from any device.</div></div>
@@ -487,6 +651,7 @@
     <div class="modal-grid">
       <div class="modal-field"><label>Sex</label><p id="m-sex"></p></div>
       <div class="modal-field"><label>Folder Number</label><p id="m-folder"></p></div>
+      <div class="modal-field"><label>Address</label><p id="m-address"></p></div>
       <div class="modal-field"><label>Age</label><p id="m-age"></p></div>
       <div class="modal-field"><label>Date of Birth</label><p id="m-dob"></p></div>
       <div class="modal-field"><label>Visit Date</label><p id="m-visit"></p></div>
@@ -578,6 +743,282 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+// ══════════════════════════════════════════════════════
+// SUPABASE AUTH & CLOUD SYNC
+// ══════════════════════════════════════════════════════
+let sbClient=null;
+let currentUser=null;
+let isOnline=false;
+
+function initSupabase(){
+  const url=localStorage.getItem('sb_url');
+  const key=localStorage.getItem('sb_key');
+  if(url&&key){
+    try{
+      sbClient=window.supabase.createClient(url,key);
+      return true;
+    }catch(e){ return false; }
+  }
+  return false;
+}
+
+function saveConfig(){
+  const url=document.getElementById('cfg-url').value.trim();
+  const key=document.getElementById('cfg-key').value.trim();
+  if(!url||!key){showLoginError('Please enter both URL and Key');return;}
+  localStorage.setItem('sb_url',url);
+  localStorage.setItem('sb_key',key);
+  if(initSupabase()){
+    showLoginError('');
+    showToastLogin('✅ Connected to Supabase!');
+    document.getElementById('config-box').style.display='none';
+  }
+}
+
+function toggleConfig(){
+  const box=document.getElementById('config-box');
+  const isHidden=getComputedStyle(box).display==='none';
+  box.style.display=isHidden?'block':'none';
+  // pre-fill saved values
+  document.getElementById('cfg-url').value=localStorage.getItem('sb_url')||'';
+  document.getElementById('cfg-key').value=localStorage.getItem('sb_key')||'';
+}
+
+function showLogin(){ document.getElementById('login-form').style.display='block'; document.getElementById('register-form').style.display='none'; showLoginError(''); }
+function showRegister(){ document.getElementById('login-form').style.display='none'; document.getElementById('register-form').style.display='block'; showLoginError(''); }
+function showLoginError(msg){ const el=document.getElementById('login-error'); el.textContent=msg; el.style.display=msg?'block':'none'; }
+function showToastLogin(msg){ showToast(msg,'success'); }
+
+// Simple password hashing (SHA-256 via Web Crypto)
+async function hashPassword(password){
+  const enc=new TextEncoder();
+  const buf=await crypto.subtle.digest('SHA-256',enc.encode(password));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin(){
+  const username=document.getElementById('l-username').value.trim();
+  const password=document.getElementById('l-password').value;
+  if(!username||!password){showLoginError('Please enter username and password');return;}
+
+  document.getElementById('login-btn').disabled=true;
+  document.getElementById('login-btn').textContent='Logging in...';
+
+  // Try cloud login first if configured
+  if(sbClient){
+    try{
+      const hash=await hashPassword(password);
+      const {data,error}=await sbClient.from('facility_users').select('*').eq('username',username).eq('password_hash',hash).single();
+      if(data&&!error){
+        currentUser=data;
+        isOnline=true;
+        localStorage.setItem('current_user',JSON.stringify(data));
+        await enterApp();
+        return;
+      }
+    }catch(e){}
+  }
+
+  // Offline fallback — check local users
+  const localUsers=JSON.parse(localStorage.getItem('local_users')||'[]');
+  const hash=await hashPassword(password);
+  const user=localUsers.find(u=>u.username===username&&u.password_hash===hash);
+  if(user){
+    currentUser=user;
+    isOnline=false;
+    localStorage.setItem('current_user',JSON.stringify(user));
+    await enterApp();
+    return;
+  }
+
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-btn').textContent='🔐 Login';
+  showLoginError('Invalid username or password');
+}
+
+async function doRegister(){
+  const fullname=document.getElementById('r-fullname').value.trim();
+  const username=document.getElementById('r-username').value.trim();
+  const password=document.getElementById('r-password').value;
+  const facility=document.getElementById('r-facility').value.trim();
+  const role=document.getElementById('r-role').value;
+  if(!fullname||!username||!password||!facility){showLoginError('Please fill in all fields');return;}
+  if(password.length<6){showLoginError('Password must be at least 6 characters');return;}
+
+  document.getElementById('register-btn').disabled=true;
+  document.getElementById('register-btn').textContent='Creating account...';
+
+  const hash=await hashPassword(password);
+  const userData={username,password_hash:hash,full_name:fullname,role,facility_name:facility};
+
+  if(sbClient){
+    try{
+      const {data,error}=await sbClient.from('facility_users').insert([userData]).select().single();
+      if(error){showLoginError('Username already exists or connection error: '+error.message);document.getElementById('register-btn').disabled=false;document.getElementById('register-btn').textContent='✅ Create Account';return;}
+      currentUser=data; isOnline=true;
+      localStorage.setItem('current_user',JSON.stringify(data));
+      await enterApp(); return;
+    }catch(e){}
+  }
+
+  // Offline fallback
+  const localUsers=JSON.parse(localStorage.getItem('local_users')||'[]');
+  if(localUsers.find(u=>u.username===username)){showLoginError('Username already taken');document.getElementById('register-btn').disabled=false;document.getElementById('register-btn').textContent='✅ Create Account';return;}
+  const newUser={...userData,id:'local_'+Date.now()};
+  localUsers.push(newUser);
+  localStorage.setItem('local_users',JSON.stringify(localUsers));
+  currentUser=newUser; isOnline=false;
+  localStorage.setItem('current_user',JSON.stringify(newUser));
+  await enterApp();
+}
+
+async function enterApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('user-bar').style.display='flex';
+  document.getElementById('ub-name').textContent=currentUser.full_name;
+  document.getElementById('ub-facility').textContent=currentUser.facility_name||'';
+  updateCloudStatus();
+  // Load cloud data if online
+  if(isOnline&&sbClient) await loadCloudData();
+  // Init app
+  document.getElementById('visitdate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cr-date').value=new Date().toISOString().slice(0,10);
+  populateMonthSelects();
+  populateConsultMonthSelects();
+}
+
+function doLogout(){
+  if(!confirm('Log out? Make sure your data is backed up.'))return;
+  currentUser=null;
+  localStorage.removeItem('current_user');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('user-bar').style.display='none';
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-btn').textContent='🔐 Login';
+  document.getElementById('l-password').value='';
+  showLoginError('');
+}
+
+function updateCloudStatus(){
+  const el=document.getElementById('cloud-status');
+  if(isOnline){el.textContent='☁️ Cloud Sync';el.className='cloud-status online';}
+  else{el.textContent='⚡ Offline';el.className='cloud-status offline';}
+}
+
+// ── CLOUD DATA SYNC ──
+async function loadCloudData(){
+  if(!sbClient||!currentUser)return;
+  try{
+    setCloudStatus('syncing','⟳ Syncing...');
+    // Load patient records
+    const {data:pr}=await sbClient.from('patient_records').select('*').eq('facility_name',currentUser.facility_name).order('created_at',{ascending:false});
+    if(pr) records=pr.map(cloudToPatient);
+
+    // Load consult records
+    const {data:cr}=await sbClient.from('consult_records').select('*').eq('facility_name',currentUser.facility_name).order('created_at',{ascending:false});
+    if(cr) consultRecords=cr.map(cloudToConsult);
+
+    // Save to local cache
+    save(); saveConsult();
+    setCloudStatus('online','☁️ Cloud Sync');
+  }catch(e){
+    setCloudStatus('offline','⚡ Offline');
+  }
+}
+
+function setCloudStatus(cls,txt){
+  const el=document.getElementById('cloud-status');
+  el.textContent=txt; el.className='cloud-status '+cls;
+}
+
+function cloudToPatient(r){
+  return {ccc:r.ccc,fullname:r.fullname,sex:r.sex,age:r.age,dob:r.dob,
+    address:r.address,folder:r.folder,insurance:r.insurance,hin:r.hin,
+    insured:r.insured,status:r.status,visitdate:r.visitdate,_cloud_id:r.id};
+}
+function cloudToConsult(r){
+  return {date:r.date,patno:r.patientnum,name:r.name,address:r.address,
+    age:r.age,ageunit:r.ageunit,sex:r.sex,provdiag:r.provdiag,
+    referred:r.referred,testresult:r.testresult,
+    princdiag:r.princdiag||[],princstatus:r.princstatus,
+    adddiag:r.adddiag||[],addstatus:r.addstatus,
+    pregnant:r.pregnant,nhis:r.nhis,_cloud_id:r.id};
+}
+
+async function pushPatientToCloud(record){
+  if(!sbClient||!currentUser||!isOnline)return;
+  try{
+    const row={
+      user_id:currentUser.id, facility_name:currentUser.facility_name,
+      ccc:record.ccc, fullname:record.fullname, sex:record.sex,
+      age:record.age, dob:record.dob, address:record.address||'—',
+      folder:record.folder, insurance:record.insurance, hin:record.hin,
+      insured:record.insured, status:record.status, visitdate:record.visitdate
+    };
+    const {data}=await sbClient.from('patient_records').insert([row]).select().single();
+    if(data) record._cloud_id=data.id;
+    setCloudStatus('online','☁️ Cloud Sync');
+  }catch(e){ setCloudStatus('offline','⚡ Offline'); }
+}
+
+async function pushConsultToCloud(record){
+  if(!sbClient||!currentUser||!isOnline)return;
+  try{
+    const row={
+      user_id:currentUser.id, facility_name:currentUser.facility_name,
+      date:record.date, patientnum:record.patno, name:record.name,
+      address:record.address||'—', age:record.age, ageunit:record.ageunit,
+      sex:record.sex, provdiag:record.provdiag, referred:record.referred,
+      testresult:record.testresult,
+      princdiag:JSON.stringify(record.princdiag||[]),
+      princstatus:record.princstatus,
+      adddiag:JSON.stringify(record.adddiag||[]),
+      addstatus:record.addstatus, pregnant:record.pregnant, nhis:record.nhis
+    };
+    const {data}=await sbClient.from('consult_records').insert([row]).select().single();
+    if(data) record._cloud_id=data.id;
+    setCloudStatus('online','☁️ Cloud Sync');
+  }catch(e){ setCloudStatus('offline','⚡ Offline'); }
+}
+
+async function deletePatientFromCloud(record){
+  if(!sbClient||!record._cloud_id||!isOnline)return;
+  try{ await sbClient.from('patient_records').delete().eq('id',record._cloud_id); }catch(e){}
+}
+async function deleteConsultFromCloud(record){
+  if(!sbClient||!record._cloud_id||!isOnline)return;
+  try{ await sbClient.from('consult_records').delete().eq('id',record._cloud_id); }catch(e){}
+}
+async function updateConsultInCloud(record){
+  if(!sbClient||!record._cloud_id||!isOnline)return;
+  try{
+    await sbClient.from('consult_records').update({
+      date:record.date,patientnum:record.patno,name:record.name,
+      address:record.address,age:record.age,ageunit:record.ageunit,
+      sex:record.sex,provdiag:record.provdiag,referred:record.referred,
+      testresult:record.testresult,
+      princdiag:JSON.stringify(record.princdiag||[]),
+      princstatus:record.princstatus,
+      adddiag:JSON.stringify(record.adddiag||[]),
+      addstatus:record.addstatus,pregnant:record.pregnant,nhis:record.nhis
+    }).eq('id',record._cloud_id);
+  }catch(e){}
+}
+
+// ── INIT: check if already logged in ──
+initSupabase();
+const _savedUser=localStorage.getItem('current_user');
+if(_savedUser){
+  try{
+    currentUser=JSON.parse(_savedUser);
+    // Auto-enter app (will try cloud sync)
+    (async()=>{
+      if(sbClient){isOnline=true;} 
+      await enterApp();
+    })();
+  }catch(e){ localStorage.removeItem('current_user'); }
+}
+
 const STORAGE_KEY="patient_records_v2";
 const META_KEY="report_meta_v2";
 const CONSULT_KEY="consult_register_v1";
@@ -612,7 +1053,7 @@ const MORBIDITY_DISEASES=[
 
   {n:9,label:"Uncomplicated Malaria Suspected",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["suspected malaria","malaria suspected"]},
   {n:10,label:"Uncomplicated Malaria Suspected Tested",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria suspected tested"]},
-  {n:11,label:"Uncomplicated Malaria Tested Positive",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria positive","malaria tested positive","malaria +","rdt positive"]},
+  {n:11,label:"Uncomplicated Malaria Tested Positive",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria positive","malaria tested positive","malaria +"]},
   {n:12,label:"Uncomplicated Malaria not tested but treated as malaria",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria not tested","treated as malaria"]},
   {n:13,label:"Uncomplicated Malaria in Pregnancy suspected",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria in pregnancy suspected","malaria pregnancy suspected"]},
   {n:14,label:"Uncomplicated Malaria in Pregnancy Suspected Tested",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["malaria pregnancy suspected tested"]},
@@ -627,7 +1068,7 @@ const MORBIDITY_DISEASES=[
   {n:23,label:"Mumps",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["mumps"]},
   {n:24,label:"Intestinal Worms",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["intestinal worms","helminth","worms"]},
   {n:25,label:"Chicken Pox",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["chicken pox","chickenpox","varicella"]},
-  {n:26,label:"Upper Respiratory Tract Infection",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["urti","upper respiratory","uri","sinusitis","common cold","rhinitis","nasopharyngitis","pharyngitis","laryngitis","tonsillitis","coryza","catarrh"]},
+  {n:26,label:"Upper Respiratory Tract Infection",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["urti","upper respiratory","sinusitis","common cold","rhinitis","nasopharyngitis","pharyngitis","laryngitis","tonsillitis","coryza","catarrh"]},
   {n:27,label:"Pneumonia",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["pneumonia"]},
   {n:28,label:"Septicaemia",section:"COMMUNICABLE NON-IMMUNIZABLE",kw:["septicaemia","septicemia","sepsis"]},
 
@@ -675,7 +1116,7 @@ const MORBIDITY_DISEASES=[
   {n:68,label:"Periodontal diseases",section:"SPECIALIZED CONDITIONS",kw:["periodontal","gum disease"]},
   {n:69,label:"Cerebral palsy",section:"SPECIALIZED CONDITIONS",kw:["cerebral palsy"]},
   {n:70,label:"Liver diseases",section:"SPECIALIZED CONDITIONS",kw:["liver disease","cirrhosis"]},
-  {n:71,label:"Acute Urinary Tract Infection",section:"SPECIALIZED CONDITIONS",kw:["uti","urinary tract infection"]},
+  {n:71,label:"Acute Urinary Tract Infection",section:"SPECIALIZED CONDITIONS",kw:["uti","urinary tract infection","urinary tract","acute uti","cystitis","urethritis","pyelonephritis","urinary infection"]},
   {n:72,label:"Skin Diseases",section:"SPECIALIZED CONDITIONS",kw:["skin disease","rash","dermatitis","eczema","seborrheic","seborrhoeic","contact dermatitis","infective dermatitis","atopic","psoriasis","tinea","ringworm","impetigo","scabies","urticaria","hives","pruritus","skin rash","skin infection","cellulitis","folliculitis","acne","boil","abscess","furuncle"]},
   {n:73,label:"Ulcers",section:"SPECIALIZED CONDITIONS",kw:["ulcer"]},
   {n:74,label:"Kidney Related Diseases",section:"SPECIALIZED CONDITIONS",kw:["kidney disease","renal"]},
@@ -703,7 +1144,6 @@ const MORBIDITY_DISEASES=[
   {n:93,label:"Pyrexia of unknown origin (PUO) (not Malaria)",section:"INJURIES AND OTHERS",kw:["puo","pyrexia of unknown","fever of unknown"]},
   {n:94,label:"Brought in Dead",section:"INJURIES AND OTHERS",kw:["brought in dead","bid"]},
   {n:95,label:"All other cases",section:"INJURIES AND OTHERS",kw:[]}, // catch-all
-  {n:97,label:"Referrals",section:"INJURIES AND OTHERS",kw:["referral","referred"]},
 ];
 // age columns for morbidity sheet (matches photo)
 const MORB_AGE_COLS=[
@@ -738,41 +1178,39 @@ function matchDisease(diagText, princStatus){
   const t=diagText.toLowerCase().trim();
   if(!t)return null;
 
-  // ── Special: Referral ──
-  if(t.includes('referral') || t.includes('referred')) return 97;
+  // ── Referral → row 97 ──
+  if(t==='referral'||t==='referred'||t==='refer') return 97;
 
-
-  // ── Special: Malaria rules ──
-  if(t==='rdt positive' || t.includes('rdt positive')) return 11;
-  if(t==='malaria' || t.includes('provisional malaria') || t.includes('malaria provisional')) return null;
-  if(t.includes('suspected malaria') || t.includes('malaria suspected')) return 9;
+  // ── Malaria in principal/additional → SKIP (do not update morbidity) ──
+  const isMalariaKeyword = t.includes('malaria')||t==='rdt';
+  if(isMalariaKeyword) return 'SKIP';
 
   // ── Special: Hypertension ──
-  // "known hypertension / known HTN / hypertension (old)" → re-attendance (return 'REATTEND')
-  // "newly diagnosed / new hypertension / hypertension" with New Case status → row 33
   const isHtn = t.includes('hypertension')||t.includes('high blood pressure')||(t==='htn');
   if(isHtn){
-    const isKnown = t.includes('known')||t.includes('old')||t.includes('established')||t.includes('chronic')||(princStatus==='Old');
+    const isNewlyDiagnosed = t.includes('new')||t.includes('newly')||t.includes('fresh')||t.includes('first');
+    const isKnown = !isNewlyDiagnosed && (t.includes('known')||t.includes('old')||t.includes('established')||t.includes('chronic')||(princStatus==='Old'));
     if(isKnown) return 'REATTEND';
-    return 33; // newly diagnosed hypertension → row 33
+    return 33; // newly diagnosed or plain "Hypertension" with New status → row 33
   }
 
   // ── Special: Diabetes Mellitus ──
   const isDm = t.includes('diabetes')||(t==='dm')||t.includes('diabetic');
   if(isDm){
-    const isKnown = t.includes('known')||t.includes('old')||t.includes('established')||t.includes('chronic')||(princStatus==='Old');
+    const isNewlyDiagnosed = t.includes('new')||t.includes('newly')||t.includes('fresh')||t.includes('first');
+    const isKnown = !isNewlyDiagnosed && (t.includes('known')||t.includes('old')||t.includes('established')||t.includes('chronic')||(princStatus==='Old'));
     if(isKnown) return 'REATTEND';
-    return 36; // newly diagnosed diabetes → row 36
+    return 36; // newly diagnosed or plain "Diabetes" with New status → row 36
   }
 
   // ── General keyword match ──
   for(const d of MORBIDITY_DISEASES){
-    if(d.special) continue; // skip special-handled diseases
+    if(d.special) continue;
     for(const kw of d.kw){
       if(t.includes(kw)) return d.n;
     }
   }
-  return null; // unmatched
+  return null; // unmatched → goes to row 95
 }
 function populateDiseaseList(){ /* disease list now handled by ALL_DIAG_OPTIONS tag system */ }
 
@@ -892,6 +1330,7 @@ function saveRecord(){
 
   records.push({
     ccc:ccc||'—',fullname,sex,dob,
+    address:document.getElementById('address').value.trim()||'—',
     folder:document.getElementById('folder').value.trim()||'—',
     age:document.getElementById('age').value,
     visitdate,
@@ -905,7 +1344,7 @@ function saveRecord(){
 }
 
 function clearForm(){
-  ['ccc','folder','fullname','dob','age','insurance','hin','visitdate'].forEach(id=>document.getElementById(id).value='');
+  ['ccc','folder','fullname','address','dob','age','insurance','hin','visitdate'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('sex').value='';
   formVals={insured:'',status:''};
   document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('selected'));
@@ -942,6 +1381,7 @@ function openModal(i){
   document.getElementById('m-ccc').textContent='CCC: '+r.ccc;
   document.getElementById('m-sex').textContent=r.sex;
   document.getElementById('m-folder').textContent=r.folder;
+  document.getElementById('m-address').textContent=r.address||'—';
   document.getElementById('m-age').textContent=r.age;
   document.getElementById('m-dob').textContent=r.dob;
   document.getElementById('m-visit').textContent=r.visitdate;
@@ -1412,18 +1852,27 @@ function tallyConsultEntry(r,counts){
   }
   // RDT Negative → does not auto-update any row from RDT alone
 
+  // ── 3. TEST RESULT: + or - → row 10 (Uncomplicated Malaria Suspected Tested) ──
+  const testRes=(r.testresult||'').trim();
+  if(testRes==='+'||testRes==='-'||testRes==='Positive'||testRes==='Negative'){
+    // Test was done (positive or negative) → row 10 (Malaria Suspected Tested)
+    // unless pregnancy → row 14
+    if(isPregnant) bump(14); else bump(10);
+  }
+
   // ── 3. PRINCIPAL DIAGNOSES ──
   const princList=Array.isArray(r.princdiag)?r.princdiag:(r.princdiag?[r.princdiag]:[]);
   princList.forEach(diagText=>{
     if(!diagText||!String(diagText).trim())return;
     const t=String(diagText).trim();
     let lineNum=matchDisease(t, r.princstatus||'New');
-    if(lineNum==='REFERRAL'){ /* counted only in row 97 */ }
-    else if(lineNum==='REFERRAL'){ /* counted only in row 97 */ }
-    else if(lineNum==='REATTEND'){
+    if(lineNum==='SKIP') return;          // malaria in principal → ignore
+    if(lineNum==='REATTEND'){
       counts._reattend=(counts._reattend||0)+1;
+    } else if(lineNum===97){
+      counts._referral=(counts._referral||0)+1; // referral → row 97
     } else {
-      if(lineNum===null) lineNum=95; // ALL unmatched → All other cases
+      if(lineNum===null) lineNum=95;      // unmatched → All other cases
       bump(lineNum);
     }
   });
@@ -1434,10 +1883,13 @@ function tallyConsultEntry(r,counts){
     if(!diagText||!String(diagText).trim())return;
     const t=String(diagText).trim();
     let lineNum=matchDisease(t, r.addstatus||'New');
+    if(lineNum==='SKIP') return;          // malaria in additional → ignore
     if(lineNum==='REATTEND'){
       counts._reattend=(counts._reattend||0)+1;
+    } else if(lineNum===97){
+      counts._referral=(counts._referral||0)+1; // referral → row 97
     } else {
-      if(lineNum===null) lineNum=95; // ALL unmatched → All other cases
+      if(lineNum===null) lineNum=95;      // unmatched → All other cases
       bump(lineNum);
     }
   });
@@ -1522,10 +1974,7 @@ function renderMorbidity(){
   html+=`<td style="font-weight:800">${totF}</td><td style="font-weight:800;background:var(--amber-l)">${totM+totF}</td></tr>`;
 
   // Re-attendances: Old case status + known HTN/DM redirected
-  const reAttendOldCase=recs.filter(r=>r.princstatus==='Old'||r.addstatus==='Old').length;
   const reAttendHtnDm=counts._reattend||0;
-  const reAttendances=reAttendOldCase+reAttendHtnDm;
-  const referrals=recs.filter(r=>r.referred==='Yes'||r.referred==='Positive'||r.referred==='Negative').length;
   html+=`<tr class="section-row"><td colspan="${TOTAL_COLS}">RE-ATTENDANCE AND REFERRALS</td></tr>`;
   html+=morbSexHeader()+morbSubHeader();
   // count re-attendances by sex/age
@@ -1540,7 +1989,7 @@ function renderMorbidity(){
     else ck2=morbAgeColKey(yrs2);
     if(!ck2)ck2='1_11m';
     const isMale=r.sex==='Male';
-    // re-attendance: old case OR known HTN/DM counted in _reattend
+    // re-attendance: old case OR known HTN/DM
     const princList2=Array.isArray(r.princdiag)?r.princdiag:(r.princdiag?[r.princdiag]:[]);
     const addList2=Array.isArray(r.adddiag)?r.adddiag:(r.adddiag?[r.adddiag]:[]);
     const allDiags=[...princList2,...addList2];
@@ -1552,7 +2001,11 @@ function renderMorbidity(){
       if(isMale){raM[ck2]=(raM[ck2]||0)+1;raTotM++;}
       else{raF[ck2]=(raF[ck2]||0)+1;raTotF++;}
     }
-    if(r.referred==='Yes'||r.referred==='Positive'||r.referred==='Negative'){
+    // referrals: from "Referral" diagnosis matched to row 97
+    const allDiagsRef=[...princList2,...addList2];
+    const hasReferralDiag=allDiagsRef.some(d=>d&&
+      ['referral','referred','refer'].includes(d.toLowerCase().trim()));
+    if(hasReferralDiag){
       if(isMale){refM[ck2]=(refM[ck2]||0)+1;refTotM++;}
       else{refF[ck2]=(refF[ck2]||0)+1;refTotF++;}
     }
@@ -1567,6 +2020,9 @@ function renderMorbidity(){
   html+=`<td style="font-weight:800">${refTotM}</td>`;
   MORB_AGE_COLS.forEach(c=>html+=`<td>${cell(refF[c.key]||0)}</td>`);
   html+=`<td style="font-weight:800">${refTotF}</td><td style="font-weight:800;background:var(--amber-l)">${refTotM+refTotF}</td></tr>`;
+
+  const referrals=refTotM+refTotF;
+  const reAttendances=raTotM+raTotF+(counts._reattend||0);
 
   html+=`</tbody>`;
   document.getElementById('morbidity-table').innerHTML=html;
@@ -1627,8 +2083,8 @@ function exportMorbidityExcel(){
 }
 function exportCSV(){
   if(!records.length){showToast('⚠️ No records to export','error');return;}
-  const h=["CCC","Folder Number","Full Name","Sex","Age","DOB","Visit Date","Insurance No.","HIN","Insurance Status","Patient Status"];
-  const rows=records.map(r=>[r.ccc,r.folder,r.fullname,r.sex,r.age,r.dob,r.visitdate,r.insurance,r.hin,r.insured,r.status].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const h=["CCC","Folder Number","Full Name","Address","Sex","Age","DOB","Visit Date","Insurance No.","HIN","Insurance Status","Patient Status"];
+  const rows=records.map(r=>[r.ccc,r.folder,r.fullname,r.address||'—',r.sex,r.age,r.dob,r.visitdate,r.insurance,r.hin,r.insured,r.status].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
   dlFile('Patient_Records_'+td()+'.csv','text/csv',[h.join(','),...rows].join('\n'));
   showToast('📄 CSV downloaded!','success');
 }
@@ -1670,8 +2126,10 @@ const ALL_DIAG_OPTIONS = [
   "Tinea","Ringworm","Impetigo","Scabies","Urticaria","Psoriasis",
   "Cellulitis","Folliculitis","Boil","Acne","Rash","Skin Rash","Eczema",
   "Skin Infection","Furuncle","Abscess",
-  // ── Malaria ──
-  "Suspected Malaria","Malaria Suspected","Malaria Suspected Tested",
+  // ── Referral (maps to row 97) ──
+  "Referral","Referred","Refer",
+  // ── Malaria (provisional only → row 9; skipped in principal/additional) ──
+  "Malaria","Suspected Malaria","Malaria Suspected",
   "Uncomplicated Malaria","Confirmed Malaria","Malaria Positive","Malaria +",
   "Malaria Tested Positive","Malaria Not Tested","Treated as Malaria",
   "Malaria in Pregnancy","Malaria in Pregnancy Suspected","Malaria PLC",
@@ -1881,6 +2339,10 @@ function archiveOldRecords(){
   showToast(`📦 Archived & removed ${toArchive.length} record(s)`,'success');
 }
 
+function copySQLSetup(){
+  const sql=document.getElementById('setup-sql').textContent;
+  navigator.clipboard.writeText(sql).then(()=>showToast('📋 SQL copied!','success'));
+}
 function dlFile(name,type,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
 function td(){return new Date().toISOString().slice(0,10);}
 function showToast(msg,type=''){
